@@ -1,13 +1,8 @@
-<!doctype html>
-<html lang="es">
-<head>
-<meta charset="utf-8">
-<meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover">
-<meta name="theme-color" content="#0b6e63"><link rel="manifest" href="manifest.webmanifest"><link rel="icon" href="icons/icon-192.png" type="image/png"><link rel="apple-touch-icon" href="icons/apple-touch-icon.png"><meta name="apple-mobile-web-app-capable" content="yes"><meta name="mobile-web-app-capable" content="yes"><meta name="apple-mobile-web-app-status-bar-style" content="default"><meta name="apple-mobile-web-app-title" content="CEDEAR">
+<!doctype html><html><head><meta charset=utf8><meta name=viewport content="width=device-width,initial-scale=1,viewport-fit=cover"><style>:root{color-scheme:light;box-sizing:border-box;padding-top:env(safe-area-inset-top,0px);padding-bottom:env(safe-area-inset-bottom,0px)}html{scroll-padding-top:env(safe-area-inset-top,0px)}body{margin:0;padding:0;font:14px -apple-system,BlinkMacSystemFont,sans-serif;background:#fff;color:#000}img{max-width:100%}[hidden]:not([hidden=until-found i]){display:none!important}</style></head><body>
 <title>Tablero CEDEAR</title>
 <meta name="claude:viewport-fit-sides" content="cover">
 <link rel="preconnect" href="https://fonts.googleapis.com">
-<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Archivo:wdth,wght@75..125,500..800&amp;family=Source+Sans+3:wght@400;600;700&amp;family=JetBrains+Mono:wght@400;600&amp;display=swap">
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Archivo:wdth,wght@75..125,500..800&family=Source+Sans+3:wght@400;600;700&family=JetBrains+Mono:wght@400;600&display=swap">
 <style>
 /* Layout: mesa de operaciones — barra de estado BYMA arriba, pestañas, paneles de trabajo densos con tablas numéricas */
 :root{
@@ -221,8 +216,7 @@ dialog::backdrop{background:rgba(10,20,18,.45)}
 }
 @media (prefers-reduced-motion:reduce){*{animation:none!important;transition:none!important}}
 </style>
-</head>
-<body>
+
 <div class="wrap">
 <header>
   <div>
@@ -233,10 +227,10 @@ dialog::backdrop{background:rgba(10,20,18,.45)}
   <div class="tape" id="tape"></div>
   <div class="upd">
     <div class="upd-s" id="upd-s"></div>
-    <div class="dlb"><button class="btn ghost" id="upd-b" hidden="">Actualizar ahora</button><button class="btn ghost" id="dl-html" title="Un solo archivo con los datos de hoy; se abre sin conexión salvo los gráficos">Descargar HTML</button><button class="btn ghost" id="dl-zip" title="Página, datos, proceso de actualización y configuración para GitHub Pages">Repositorio GitHub (.zip)</button></div>
+    <div class="dlb"><button class="btn ghost" id="upd-b" hidden>Actualizar ahora</button><button class="btn ghost" id="dl-html" title="Un solo archivo con los datos de hoy; se abre sin conexión salvo los gráficos">Descargar HTML</button><button class="btn ghost" id="dl-zip" title="Página, datos, proceso de actualización y configuración para GitHub Pages">Repositorio GitHub (.zip)</button></div>
   </div>
-  <p class="note upd-msg" id="upd-msg" hidden=""></p>
-  <p class="note upd-msg" id="dl-msg" hidden=""></p>
+  <p class="note upd-msg" id="upd-msg" hidden></p>
+  <p class="note upd-msg" id="dl-msg" hidden></p>
 </header>
 
 <nav class="tabs" aria-label="Secciones">
@@ -265,7 +259,7 @@ dialog::backdrop{background:rgba(10,20,18,.45)}
         <option value="treynor">Ratio de Treynor</option>
         <option value="calmar">Ratio de Calmar</option>
       </select></div>
-    <div class="field" id="f-il" hidden=""><span>Baja liquidez</span><select id="fil"><option value="0">Ocultar</option><option value="1">Mostrar</option></select></div>
+    <div class="field" id="f-il" hidden><span>Baja liquidez</span><select id="fil"><option value="0">Ocultar</option><option value="1">Mostrar</option></select></div>
     <div class="field" id="f-type"><span>Tipo</span><select id="ftype"><option value="">Todos</option><option>Acción</option><option>ETF</option></select></div>
     <div class="field"><span>Sector</span><select id="fsec"><option value="">Todos</option></select></div>
     <div class="field"><span>Vista</span><div class="seg" id="mode"><button data-m="metrics" aria-pressed="true">Métricas</button><button data-m="heat" aria-pressed="false">Mapa por horizonte</button></div></div>
@@ -305,7 +299,7 @@ dialog::backdrop{background:rgba(10,20,18,.45)}
 </section>
 
 <!-- CARTERA -->
-<section class="view" id="v-cartera" hidden="">
+<section class="view" id="v-cartera" hidden>
   <div class="panel" style="display:grid;gap:12px">
     <div class="bar">
       <div class="field"><span>Mercado</span><select id="p-mkt"><option value="ced">CEDEARs</option><option value="ar">Acciones argentinas</option></select></div>
@@ -325,15 +319,15 @@ dialog::backdrop{background:rgba(10,20,18,.45)}
         <option value="maxsharpe">Máximo Sharpe (tangente)</option><option value="minvar">Mínima varianza global</option>
         <option value="cvar">Media-CVaR (máximo retorno / CVaR)</option><option value="mincvar">Mínimo CVaR</option>
         <option value="rp">Paridad de riesgo</option><option value="mv">Media-varianza con aversión λ</option><option value="ew">Equiponderada 1/N</option></select></div>
-      <div class="field" id="p-lam-f" hidden=""><span>Aversión λ</span><input type="number" id="p-lam" step="0.5" value="4"></div>
+      <div class="field" id="p-lam-f" hidden><span>Aversión λ</span><input type="number" id="p-lam" step="0.5" value="4"></div>
       <div class="field"><span>Peso máx. por activo <b id="p-cap-v" class="mono"></b></span><input type="range" id="p-cap" min="5" max="100" step="1" value="15"></div>
     </div>
     <div class="bar">
       <div class="field"><span>Capital (ARS)</span><input type="number" id="p-cap-ars" step="100000" value="10000000" style="width:150px"></div>
       <div class="field"><span>CCL (ARS/USD)</span><input type="number" id="p-ccl" step="1"></div>
-      <div class="field" style="flex:1 1 220px" id="p-man-f" hidden=""><span>Agregar activo</span><input type="text" id="p-add" list="dl-tk" placeholder="Ticker, Enter para sumar"><datalist id="dl-tk"></datalist></div>
+      <div class="field" style="flex:1 1 220px" id="p-man-f" hidden><span>Agregar activo</span><input type="text" id="p-add" list="dl-tk" placeholder="Ticker, Enter para sumar"><datalist id="dl-tk"></datalist></div>
     </div>
-    <div class="pick" id="p-pick" hidden=""></div>
+    <div class="pick" id="p-pick" hidden></div>
   </div>
   <div class="kpis" id="p-kpis"></div>
   <div class="grid2">
@@ -367,12 +361,12 @@ dialog::backdrop{background:rgba(10,20,18,.45)}
 </section>
 
 <!-- VALIDACION -->
-<section class="view" id="v-validacion" hidden="">
+<section class="view" id="v-validacion" hidden>
   <div class="panel" style="display:grid;gap:10px">
     <div class="bar">
-      <div class="field"><span>Rebalanceo</span><select id="b-reb"><option value="21">Mensual</option><option value="63" selected="">Trimestral</option><option value="126">Semestral</option></select></div>
+      <div class="field"><span>Rebalanceo</span><select id="b-reb"><option value="21">Mensual</option><option value="63" selected>Trimestral</option><option value="126">Semestral</option></select></div>
       <div class="field"><span>Costo por operación (pb)</span><input type="number" id="b-tc" value="60" step="5"></div>
-      <div class="field"><span>Horizonte Monte Carlo</span><select id="mc-h"><option value="63">3 meses</option><option value="126">6 meses</option><option value="252" selected="">1 año</option><option value="756">3 años</option></select></div>
+      <div class="field"><span>Horizonte Monte Carlo</span><select id="mc-h"><option value="63">3 meses</option><option value="126">6 meses</option><option value="252" selected>1 año</option><option value="756">3 años</option></select></div>
       <div class="field"><span>Centrar Monte Carlo en</span><select id="mc-c"><option value="capm">E[R] de equilibrio CAPM</option><option value="model">E[R] del modelo elegido</option><option value="hist">Media histórica (sin ajustar)</option></select></div>
       <button class="btn" id="b-run">Correr validación</button>
     </div>
@@ -400,7 +394,7 @@ dialog::backdrop{background:rgba(10,20,18,.45)}
 </section>
 
 <!-- MI CARTERA -->
-<section class="view" id="v-mia" hidden="">
+<section class="view" id="v-mia" hidden>
   <div class="panel" style="display:grid;gap:12px">
     <div class="bar">
       <div class="field"><span>Cartera</span><select id="m-sel"></select></div>
@@ -423,14 +417,14 @@ dialog::backdrop{background:rgba(10,20,18,.45)}
       <div class="field"><span>Fecha</span><input type="date" id="m-td"></div>
       <div class="field" id="f-tm"><span>Mercado</span><select id="m-tm"><option value="ced">CEDEAR</option><option value="ar">Acción argentina</option></select></div>
       <div class="field" id="f-tt" style="flex:1 1 120px"><span>Ticker</span><input type="text" id="m-tt" list="m-dl" placeholder="AAPL, GGAL…" autocomplete="off"><datalist id="m-dl"></datalist></div>
-      <div class="field" id="f-ts" hidden=""><span>Qué se vende</span><select id="m-ts"></select></div>
+      <div class="field" id="f-ts" hidden><span>Qué se vende</span><select id="m-ts"></select></div>
       <div class="field" id="f-thw"><span>Cargar por</span><select id="m-thw"></select></div>
-      <div class="field" id="f-tpc" hidden=""><span>% de la tenencia</span><input type="number" id="m-tpc" min="1" max="100" step="1" value="100" style="width:90px"></div>
-      <div class="field" id="f-tn" hidden=""><span>Cantidad</span><input type="number" id="m-tn" min="0" step="1" style="width:110px"></div>
-      <div class="field" id="f-tp" hidden=""><span>Precio ARS por unidad</span><input type="number" id="m-tp" min="0" step="0.01" style="width:130px"></div>
+      <div class="field" id="f-tpc" hidden><span>% de la tenencia</span><input type="number" id="m-tpc" min="1" max="100" step="1" value="100" style="width:90px"></div>
+      <div class="field" id="f-tn" hidden><span>Cantidad</span><input type="number" id="m-tn" min="0" step="1" style="width:110px"></div>
+      <div class="field" id="f-tp" hidden><span>Precio ARS por unidad</span><input type="number" id="m-tp" min="0" step="0.01" style="width:130px"></div>
       <div class="field" id="f-ta"><span id="m-tal">Monto</span><input type="number" id="m-ta" min="0" step="1000" style="width:140px"></div>
       <div class="field" id="f-tf"><span>Se paga con</span><select id="m-tf"><option value="new">Aporte nuevo</option><option value="cash">Efectivo de la cartera</option></select></div>
-      <div class="field" id="f-tdst" hidden=""><span>Lo cobrado</span><select id="m-tdst"><option value="out">Se retira</option><option value="cash">Queda en efectivo</option></select></div>
+      <div class="field" id="f-tdst" hidden><span>Lo cobrado</span><select id="m-tdst"><option value="out">Se retira</option><option value="cash">Queda en efectivo</option></select></div>
       <button class="btn" id="m-tadd">Agregar</button>
     </div>
     <p class="note" id="m-thint" style="margin:0"></p>
@@ -469,7 +463,7 @@ dialog::backdrop{background:rgba(10,20,18,.45)}
 </section>
 
 <!-- METODOLOGIA -->
-<section class="view" id="v-metodo" hidden="">
+<section class="view" id="v-metodo" hidden>
   <div class="panel meth">
     <h2>Datos</h2>
     <p>Universo: todos los CEDEARs con cotización en el panel de BYMA al cierre indicado en la cinta superior. Para cada uno se usa la serie diaria ajustada por dividendos y splits del activo subyacente en su mercado de origen, en dólares (los subyacentes brasileños se convierten con el tipo de cambio BRL/USD). El retorno de un CEDEAR en pesos es aproximadamente el del subyacente multiplicado por la variación del contado con liquidación, así que el ranking en dólares es el relevante para comparar activos entre sí. La tasa libre de riesgo es la letra del Tesoro de EE.UU. a 13 semanas.</p>
@@ -478,7 +472,7 @@ dialog::backdrop{background:rgba(10,20,18,.45)}
     <p>Calidad de datos de las acciones locales: un salto diario mayor a +85% o una caída mayor a −46% se trata como split no ajustado o precio erróneo y se neutraliza (los mayores movimientos reales del período, como el +45–50% de los bancos el 27/10/2025, quedan intactos). Las especies con más de 30% de ruedas sin cambio de precio en el último año se marcan como de baja liquidez y se ocultan por defecto.</p>
     <p>Mapa de calor: cada caja tiene un área proporcional a la capitalización bursátil (precio por acciones en circulación, de Yahoo Finance; en ETF, activos netos del fondo; acciones brasileñas y argentinas convertidas a dólares) o, si se elige, al monto operado hoy en BYMA. Las cajas se agrupan por sector con el algoritmo de rectángulos aproximadamente cuadrados de Bruls, Huizing y van Wijk (2000).</p>
     <h2>Actualización</h2>
-    <p>Los datos se renuevan solos. En días hábiles, cada hora entre las 11:45 y las 18:45 (hora de Buenos Aires), se toman los precios del momento de BYMA, de los subyacentes en EE.UU. y Brasil, el CCL, el Merval, la tasa y las capitalizaciones, y se agregan como último punto de la historia. A las 20:15 se reconstruye todo con los cierres oficiales ajustados y se incorporan las altas y bajas de CEDEARs y del panel. Todas las métricas, rankings, mapas y carteras se recalculan en el navegador con los datos vigentes. Al volver a abrir la página se cargan los datos más recientes.</p>
+    <p>Los datos se renuevan solos. En días hábiles, cada hora entre las 11:45 y las 18:45 (hora de Buenos Aires), se toman los precios del momento de BYMA, de los subyacentes en EE.UU. y Brasil, el CCL, el Merval, la tasa y las capitalizaciones, y se agregan como último punto de la historia. A las 20:15 se reconstruye todo con los cierres oficiales ajustados y se incorporan las altas y bajas de CEDEARs y del panel. Todas las métricas, rankings, mapas y carteras se recalculan en el navegador con los datos vigentes. Si tenés la página abierta, se recarga sola después de cada actualización.</p>
     <h2>Descargas y uso en el celular</h2>
     <p><b>Descargar HTML</b> genera un único archivo con la página y los datos del momento: trae incluida la biblioteca de gráficos, así que funciona sin conexión, y guarda las carteras propias en ese dispositivo. No se actualiza solo. Se abre con un navegador en computadora o con Chrome en Android; en iPhone la vista previa de Archivos no ejecuta páginas, así que conviene usar la versión publicada en GitHub Pages.</p>
     <p><b>Repositorio GitHub (.zip)</b> trae la página, los datos, el proceso de actualización y la configuración para publicarla gratis en GitHub Pages: una tarea de GitHub Actions corre el proceso en los mismos horarios que acá y vuelve a publicar. La página es instalable como aplicación: en iPhone, Safari → Compartir → Agregar a inicio; en Android, Chrome → menú → Instalar aplicación. El archivo README.md del repositorio explica los pasos.</p>
@@ -537,6 +531,7 @@ dialog::backdrop{background:rgba(10,20,18,.45)}
   </div>
 </section>
 </div>
+
 <dialog id="dlg"><div class="dlg-h"><div><div class="lbl" id="d-sub"></div><h2 id="d-t"></h2></div><button class="x" id="d-x" aria-label="Cerrar">×</button></div>
 <div class="dlg-b">
   <div class="bar"><div class="field"><span>Horizonte</span><div class="seg" id="d-hz"></div></div></div>
@@ -545,6 +540,7 @@ dialog::backdrop{background:rgba(10,20,18,.45)}
   <div class="legend"><span><i style="background:var(--c1)"></i>Activo</span><span><i style="background:var(--c2)"></i><span id="d-bn">SPY</span></span></div>
   <div class="tbl-wrap short"><table id="d-t2" class="stick"></table></div>
 </div></dialog>
+
 <script src="https://cdnjs.cloudflare.com/ajax/libs/Chart.js/4.4.1/chart.umd.min.js"></script>
 <script src="data/ced.js"></script>
 <script src="data/ar.js"></script>
@@ -2071,6 +2067,5 @@ async function offerFile(filename, blob){
 /* ==================== INICIO ==================== */
 route();
 </script>
-<script>if ('serviceWorker' in navigator && location.protocol==='https:') navigator.serviceWorker.register('sw.js').catch(()=>{});</script>
-</body>
-</html>
+
+</body></html>
