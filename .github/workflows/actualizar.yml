@@ -1,0 +1,71 @@
+name: Actualizar datos y publicar
+
+on:
+  schedule:
+    - cron: '45 14-21 * * 1-5'   # 11:45 a 18:45 en Buenos Aires: precios en rueda
+    - cron: '15 23 * * 1-5'      # 20:15 en Buenos Aires: reconstrucción con cierres oficiales
+  workflow_dispatch:
+    inputs:
+      modo:
+        description: 'intraday (precios del momento) o full (reconstrucción completa)'
+        type: choice
+        options: [intraday, full]
+        default: full
+  push:
+    branches: [main]
+
+permissions:
+  contents: write
+  pages: write
+  id-token: write
+
+concurrency:
+  group: tablero
+  cancel-in-progress: false
+
+jobs:
+  datos:
+    if: github.event_name != 'push'
+    runs-on: ubuntu-latest
+    timeout-minutes: 60
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-python@v5
+        with:
+          python-version: '3.12'
+      - name: Elegir modo
+        id: modo
+        run: |
+          if [ "${{ github.event_name }}" = "workflow_dispatch" ]; then echo "m=${{ inputs.modo }}" >> "$GITHUB_OUTPUT"
+          elif [ "${{ github.event.schedule }}" = "15 23 * * 1-5" ]; then echo "m=full" >> "$GITHUB_OUTPUT"
+          else echo "m=intraday" >> "$GITHUB_OUTPUT"; fi
+      - name: Correr el proceso de datos
+        run: |
+          M="${{ steps.modo.outputs.m }}"
+          if [ "$M" = "full" ]; then python -u pipeline.py full --out . --prev . || python -u pipeline.py full --out . --prev .
+          else python -u pipeline.py intraday --out . || (sleep 60 && python -u pipeline.py intraday --out .); fi
+      - name: Guardar los datos
+        run: |
+          git config user.name "github-actions[bot]"
+          git config user.email "41898283+github-actions[bot]@users.noreply.github.com"
+          git add data
+          git diff --cached --quiet || git commit -m "Datos ${{ steps.modo.outputs.m }} $(date -u +%Y-%m-%dT%H:%MZ)"
+          git push
+
+  publicar:
+    needs: datos
+    if: always() && (needs.datos.result == 'success' || needs.datos.result == 'skipped')
+    runs-on: ubuntu-latest
+    environment:
+      name: github-pages
+      url: ${{ steps.deploy.outputs.page_url }}
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          ref: main
+      - uses: actions/configure-pages@v5
+      - uses: actions/upload-pages-artifact@v3
+        with:
+          path: .
+      - id: deploy
+        uses: actions/deploy-pages@v4
