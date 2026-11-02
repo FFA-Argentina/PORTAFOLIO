@@ -1,0 +1,2076 @@
+<!doctype html>
+<html lang="es">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover">
+<meta name="theme-color" content="#0b6e63"><link rel="manifest" href="manifest.webmanifest"><link rel="icon" href="icons/icon-192.png" type="image/png"><link rel="apple-touch-icon" href="icons/apple-touch-icon.png"><meta name="apple-mobile-web-app-capable" content="yes"><meta name="mobile-web-app-capable" content="yes"><meta name="apple-mobile-web-app-status-bar-style" content="default"><meta name="apple-mobile-web-app-title" content="CEDEAR">
+<title>Tablero CEDEAR</title>
+<meta name="claude:viewport-fit-sides" content="cover">
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Archivo:wdth,wght@75..125,500..800&amp;family=Source+Sans+3:wght@400;600;700&amp;family=JetBrains+Mono:wght@400;600&amp;display=swap">
+<style>
+/* Layout: mesa de operaciones — barra de estado BYMA arriba, pestañas, paneles de trabajo densos con tablas numéricas */
+:root{
+  --bg:#f3f5f4; --panel:#ffffff; --ink:#15211d; --muted:#5d6b66; --line:#dbe1de; --soft:#e9eeeb;
+  --accent:#0b6e63; --accent-ink:#ffffff; --accent-soft:#d6ece8;
+  --pos:#127a3e; --neg:#b3261e; --warn:#9a6400;
+  --zebra:#f7f9f8; --hover:#e3eeea; --shadow:rgba(20,40,35,.22);
+  --tm0:#dde4e1; --tm-pos:#157f43; --tm-neg:#c2362c; --tm-line:#ffffff;
+  --c1:#0b6e63; --c2:#c4572a; --c3:#5560a8; --c4:#8a8f2a; --c5:#7a4fb5; --c6:#a07a1e;
+  --f-display:"Archivo","Arial Narrow",system-ui,sans-serif;
+  --f-body:"Source Sans 3","Segoe UI",system-ui,sans-serif;
+  --f-mono:"JetBrains Mono",ui-monospace,"SFMono-Regular",Menlo,monospace;
+  color-scheme:light;
+}
+@media (prefers-color-scheme:dark){:root:not([data-theme="light"]){
+  --bg:#0f1513; --panel:#161e1b; --ink:#e3ebe7; --muted:#93a39c; --line:#2a3632; --soft:#1d2724;
+  --accent:#3fbfae; --accent-ink:#06201c; --accent-soft:#173a35;
+  --pos:#4cc47c; --neg:#ff7b70; --warn:#e3a740;
+  --zebra:#19221f; --hover:#22312c; --shadow:rgba(0,0,0,.65);
+  --tm0:#28322f; --tm-pos:#1e9a54; --tm-neg:#d2453b; --tm-line:#0f1513;
+  --c1:#3fbfae; --c2:#f08a5d; --c3:#97a0ec; --c4:#c9cf5a; --c5:#b896f0; --c6:#e0b85a; color-scheme:dark}}
+:root[data-theme="dark"]{
+  --bg:#0f1513; --panel:#161e1b; --ink:#e3ebe7; --muted:#93a39c; --line:#2a3632; --soft:#1d2724;
+  --accent:#3fbfae; --accent-ink:#06201c; --accent-soft:#173a35;
+  --pos:#4cc47c; --neg:#ff7b70; --warn:#e3a740;
+  --zebra:#19221f; --hover:#22312c; --shadow:rgba(0,0,0,.65);
+  --tm0:#28322f; --tm-pos:#1e9a54; --tm-neg:#d2453b; --tm-line:#0f1513;
+  --c1:#3fbfae; --c2:#f08a5d; --c3:#97a0ec; --c4:#c9cf5a; --c5:#b896f0; --c6:#e0b85a; color-scheme:dark}
+*{box-sizing:border-box}
+body{background:var(--bg);color:var(--ink);font:15px/1.45 var(--f-body);margin:0}
+.wrap{max-width:1360px;margin:0 auto;padding-block:0 48px;padding-left:max(16px,env(safe-area-inset-left,0px));padding-right:max(16px,env(safe-area-inset-right,0px))}
+h1,h2,h3{font-family:var(--f-display);text-wrap:balance;margin:0}
+h1{font-size:clamp(26px,4vw,38px);font-weight:800;font-stretch:80%;letter-spacing:-.01em;line-height:1.05}
+h2{font-size:20px;font-weight:700;font-stretch:90%}
+h3{font-size:15px;font-weight:700;font-stretch:95%}
+.num,td.n,.mono{font-family:var(--f-mono);font-variant-numeric:tabular-nums}
+.lbl{font-size:11px;letter-spacing:.08em;text-transform:uppercase;color:var(--muted);font-weight:600}
+.muted{color:var(--muted)}
+a{color:var(--accent)}
+/* cabecera */
+header{display:grid;gap:14px;padding-block:22px 14px}
+.tape{display:flex;flex-wrap:wrap;gap:6px 22px;font-family:var(--f-mono);font-size:12.5px;color:var(--muted);border-top:2px solid var(--ink);border-bottom:1px solid var(--line);padding-block:7px}
+.tape b{color:var(--ink);font-weight:600}
+.lead{max-width:72ch;color:var(--muted);margin:0}
+nav.tabs{display:flex;gap:2px;border-bottom:1px solid var(--line);overflow-x:auto;position:sticky;top:env(safe-area-inset-top,0px);background:var(--bg);z-index:5}
+body::before{content:"";position:fixed;inset:0 0 auto;height:env(safe-area-inset-top,0px);z-index:10;background:var(--bg)}
+nav.tabs a{font-family:var(--f-display);font-stretch:90%;font-weight:600;font-size:15px;text-decoration:none;color:var(--muted);padding:10px 14px;border-bottom:3px solid transparent;white-space:nowrap}
+nav.tabs a[aria-current="page"]{color:var(--ink);border-bottom-color:var(--accent)}
+nav.tabs a:focus-visible,button:focus-visible,select:focus-visible,input:focus-visible{outline:2px solid var(--accent);outline-offset:2px}
+section.view{display:grid;gap:16px;padding-top:16px}
+/* actualización */
+.upd{display:flex;flex-wrap:wrap;gap:8px 14px;align-items:center;justify-content:space-between}
+.upd-s{display:flex;flex-wrap:wrap;gap:6px 10px;align-items:center;font-size:13px;color:var(--muted)}
+.live{display:inline-flex;align-items:center;gap:6px;font:600 11px var(--f-mono);letter-spacing:.04em;text-transform:uppercase;padding:2px 8px;border-radius:999px;background:var(--accent-soft);color:var(--accent)}
+.live i{width:7px;height:7px;border-radius:50%;background:var(--accent)}
+.live.close{background:var(--soft);color:var(--muted)} .live.close i{background:var(--muted)}
+.btn:disabled{opacity:.55;cursor:default}
+.upd-msg{margin:0}
+.dlb{display:flex;flex-wrap:wrap;gap:8px}
+/* controles */
+.bar{display:flex;flex-wrap:wrap;gap:10px 14px;align-items:end}
+.field{display:grid;gap:3px;min-width:0}
+.field>span{font-size:11px;letter-spacing:.06em;text-transform:uppercase;color:var(--muted);font-weight:600}
+select,input[type=text],input[type=number],input[type=search],input[type=date],textarea{font:inherit;font-size:14px;color:var(--ink);background:var(--panel);border:1px solid var(--line);border-radius:6px;padding:6px 8px;min-width:0}
+input[type=number]{width:110px}
+input[type=range]{accent-color:var(--accent)}
+.seg{display:inline-flex;border:1px solid var(--line);border-radius:6px;overflow:hidden;background:var(--panel)}
+.seg button{font:600 13px var(--f-mono);border:0;background:transparent;color:var(--muted);padding:6px 10px;cursor:pointer}
+.seg button+button{border-left:1px solid var(--line)}
+.seg button[aria-pressed="true"]{background:var(--accent);color:var(--accent-ink)}
+.btn{font:600 14px var(--f-body);border:1px solid var(--accent);background:var(--accent);color:var(--accent-ink);border-radius:6px;padding:7px 14px;cursor:pointer}
+.btn.ghost{background:transparent;color:var(--accent)}
+.panel{background:var(--panel);border:1px solid var(--line);border-radius:8px;padding:14px 16px;min-width:0}
+.grid2{display:grid;grid-template-columns:minmax(0,1.15fr) minmax(0,1fr);gap:16px}
+.grid3{display:grid;grid-template-columns:repeat(3,minmax(0,1fr));gap:16px}
+@media (max-width:900px){.grid2,.grid3{grid-template-columns:minmax(0,1fr)}}
+.kpis{display:grid;grid-template-columns:repeat(auto-fit,minmax(130px,1fr));gap:1px;background:var(--line);border:1px solid var(--line);border-radius:8px;overflow:hidden}
+.kpi{background:var(--panel);padding:10px 12px;display:grid;gap:2px}
+.kpi .v{font:600 20px var(--f-mono);font-variant-numeric:tabular-nums}
+.kpi .s{font-size:12px;color:var(--muted)}
+/* tablas */
+.tbl-wrap{overflow:auto;max-height:min(68vh,620px);border:1px solid var(--line);border-radius:8px;background:var(--panel);overscroll-behavior-x:contain;scrollbar-width:thin;scrollbar-color:var(--line) transparent}
+.tbl-wrap::-webkit-scrollbar{height:10px;width:10px}
+.tbl-wrap::-webkit-scrollbar-thumb{background:var(--line);border-radius:6px}
+.hrail{display:flex;align-items:center;gap:8px}
+.track{position:relative;flex:1;height:14px;border-radius:7px;background:var(--soft);border:1px solid var(--line);cursor:pointer;touch-action:none;min-width:0}
+.thumb{position:absolute;top:2px;bottom:2px;left:0;border-radius:5px;background:var(--accent);opacity:.8;cursor:grab}
+.thumb:hover,.track:active .thumb{opacity:1}
+.pan{font:600 16px/1 var(--f-mono);width:32px;height:28px;border:1px solid var(--line);border-radius:6px;background:var(--panel);color:var(--ink);cursor:pointer;flex:none}
+.pan:hover:not(:disabled){border-color:var(--accent);color:var(--accent)}
+.pan:disabled{opacity:.35;cursor:default}
+.hint{font-size:12px;color:var(--muted);white-space:nowrap}
+@media (max-width:600px){.hint{display:none}}
+.tbl-wrap.short{max-height:none}
+table{border-collapse:collapse;width:100%;font-size:13.5px}
+th,td{padding:6px 9px;border-bottom:1px solid var(--soft);text-align:left;white-space:nowrap}
+th{position:sticky;top:0;background:var(--panel);font:600 11px var(--f-body);letter-spacing:.05em;text-transform:uppercase;color:var(--muted);border-bottom:1px solid var(--line);z-index:1;cursor:pointer;user-select:none}
+th.n,td.n{text-align:right}
+th[aria-sort]{color:var(--ink)}
+th[aria-sort="descending"]::after{content:" ▾"}
+th[aria-sort="ascending"]::after{content:" ▴"}
+tbody tr:nth-child(even) td{background:var(--zebra)}
+tbody tr:hover td{background:var(--hover)}
+table.stick th:first-child,table.stick td:first-child{position:sticky;left:0;z-index:2;background:var(--panel);box-shadow:inset -1px 0 0 var(--line)}
+table.stick tbody tr:nth-child(even) td:first-child{background:var(--zebra)}
+table.stick tbody tr:hover td:first-child{background:var(--hover)}
+table.stick thead th:first-child{z-index:4}
+.tbl-wrap.scrolled table.stick th:first-child,.tbl-wrap.scrolled table.stick td:first-child{box-shadow:inset -1px 0 0 var(--line),8px 0 10px -8px var(--shadow)}
+tfoot td{background:var(--panel);font-weight:600}
+tbody tr{cursor:pointer}
+td.tk{font:600 13.5px var(--f-mono);min-width:128px}
+.gk{text-transform:none;letter-spacing:0}
+.rk{display:inline-block;min-width:2.6em;color:var(--muted);font-weight:400;font-size:11.5px}
+td.sec{max-width:150px;overflow:hidden;text-overflow:ellipsis;color:var(--muted);font-size:12.5px}
+td.sp{padding-block:2px}
+.spk{display:block}
+.spk polyline{fill:none;stroke-width:1.5;stroke-linejoin:round;stroke-linecap:round}
+.spk.up polyline{stroke:var(--pos)} .spk.dn polyline{stroke:var(--neg)}
+.sb{display:inline-block;width:46px;height:8px;background:var(--soft);border-radius:4px;position:relative;vertical-align:middle;margin-right:8px}
+.sb i{position:absolute;top:0;bottom:0;border-radius:4px}
+.sb i.pos{background:var(--pos)} .sb i.neg{background:var(--neg)}
+.sb::after{content:"";position:absolute;left:50%;top:-2px;bottom:-2px;width:1px;background:var(--muted)}
+/* mapa de calor */
+.tm-wrap{position:relative;height:540px;border-radius:6px;overflow:hidden;background:var(--tm-line);user-select:none}
+@media (max-width:700px){.tm-wrap{height:460px}}
+.tm-sec{position:absolute;box-sizing:border-box;border:1px solid var(--tm-line)}
+.tm-sec>span{position:absolute;left:4px;top:1px;right:4px;font:700 10.5px/14px var(--f-body);letter-spacing:.06em;text-transform:uppercase;color:var(--muted);white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+.tm-box{position:absolute;box-sizing:border-box;border:1px solid var(--tm-line);display:flex;flex-direction:column;align-items:center;justify-content:center;overflow:hidden;cursor:pointer;text-align:center;line-height:1.1}
+.tm-box:hover{outline:2px solid var(--ink);outline-offset:-2px;z-index:2}
+.tm-box b{font-family:var(--f-display);font-stretch:85%;font-weight:700;white-space:nowrap}
+.tm-box small{font-family:var(--f-mono);font-size:.62em;opacity:.92;white-space:nowrap}
+.tm-tip{position:absolute;z-index:5;pointer-events:none;background:var(--panel);color:var(--ink);border:1px solid var(--line);border-radius:6px;padding:7px 9px;font-size:12.5px;box-shadow:0 6px 18px var(--shadow);max-width:260px;display:grid;gap:2px}
+.tm-tip b{font-family:var(--f-mono)}
+.tm-legend{display:flex;align-items:center;gap:8px;font:12px var(--f-mono);color:var(--muted);flex-wrap:wrap}
+.tm-grad{width:180px;height:10px;border-radius:5px;background:linear-gradient(90deg,var(--tm-neg),var(--tm0),var(--tm-pos))}
+.mhead{display:grid;gap:4px}
+.mhead p{margin:0}
+/* resumen */
+.phead{display:flex;justify-content:space-between;gap:10px;flex-wrap:wrap;align-items:baseline}
+.chart.md{height:300px}
+.leaders{display:grid;gap:3px}
+.ld{display:grid;grid-template-columns:24px 64px minmax(0,1fr) 64px;gap:10px;align-items:center;border:0;background:transparent;color:var(--ink);font:inherit;text-align:left;padding:4px 6px;border-radius:6px;cursor:pointer}
+.ld:hover{background:var(--hover)}
+.ld .r{font:400 11.5px var(--f-mono);color:var(--muted)}
+.ld .t{font:600 13.5px var(--f-mono)}
+.ld .b{height:10px;background:var(--soft);border-radius:5px;overflow:hidden;min-width:0}
+.ld .b i{display:block;height:100%;background:var(--accent);border-radius:5px}
+.ld .v{font:600 13px var(--f-mono);text-align:right;font-variant-numeric:tabular-nums}
+.minis{display:grid;grid-template-columns:repeat(3,minmax(0,1fr));gap:1px;background:var(--line);border:1px solid var(--line);border-radius:8px;overflow:hidden}
+.minis div{background:var(--panel);padding:8px 10px;display:grid;gap:1px}
+.minis b{font:600 17px var(--f-mono);font-variant-numeric:tabular-nums}
+td.nm{max-width:240px;overflow:hidden;text-overflow:ellipsis;color:var(--muted)}
+.pos{color:var(--pos)} .neg{color:var(--neg)}
+.chip{display:inline-block;font:600 11px var(--f-mono);padding:1px 6px;border-radius:4px;background:var(--soft);color:var(--muted)}
+.chip.etf{background:var(--accent-soft);color:var(--accent)}
+.chip.warn{color:var(--warn)}
+.heat{font-family:var(--f-mono);text-align:right}
+.bar-cell{position:relative}
+.wbar{height:6px;background:var(--accent);border-radius:3px;min-width:1px}
+.chart{position:relative;height:340px}
+.chart.sm{height:240px}
+.legend{display:flex;flex-wrap:wrap;gap:12px;font-size:12.5px;color:var(--muted)}
+.legend i{display:inline-block;width:12px;height:3px;vertical-align:middle;margin-right:5px;border-radius:2px}
+.note{font-size:13px;color:var(--muted);max-width:90ch}
+.pick{display:flex;flex-wrap:wrap;gap:6px}
+.pick button{font:600 12px var(--f-mono);border:1px solid var(--line);background:var(--panel);color:var(--ink);border-radius:5px;padding:3px 7px;cursor:pointer}
+.pick button:hover{border-color:var(--neg);color:var(--neg)}
+#sg{display:grid;gap:12px}
+.pick button[aria-pressed="true"]{background:var(--accent-soft);border-color:var(--accent)}
+.pick button i{display:inline-block;width:10px;height:3px;border-radius:2px;vertical-align:middle;margin-right:5px}
+.pick button[aria-pressed="false"]{opacity:.6}
+td input[type=number]{width:80px;padding:3px 6px}
+.xb{border:0;background:transparent;color:var(--muted);font-size:18px;cursor:pointer;line-height:1;padding:0 4px}
+.xb:hover{color:var(--neg)}
+details.panel summary{list-style:revert}
+.sgrow{display:grid;gap:6px}
+.pick.sgp button:hover{border-color:var(--accent);color:var(--accent)}
+#m-kpis{background:var(--panel);gap:0}
+#m-kpis .kpi{box-shadow:inset -1px -1px 0 var(--line)}
+.chip.neg{color:var(--neg)} .chip.pos{color:var(--pos)}
+/* detalle */
+dialog{border:1px solid var(--line);border-radius:10px;background:var(--panel);color:var(--ink);width:min(980px,calc(100vw - 32px));max-height:calc(100vh - 40px);padding:0}
+dialog::backdrop{background:rgba(10,20,18,.45)}
+.dlg-h{display:flex;justify-content:space-between;gap:12px;align-items:start;padding:14px 16px;border-bottom:1px solid var(--line);position:sticky;top:0;background:var(--panel);z-index:2}
+.dlg-b{padding:14px 16px;display:grid;gap:14px}
+.x{border:0;background:transparent;color:var(--muted);font-size:22px;cursor:pointer;line-height:1}
+.meth{max-width:78ch;display:grid;gap:12px}
+.meth h3{margin-top:10px}
+.meth p,.meth li{margin:0}
+.meth ul{margin:0;padding-left:20px;display:grid;gap:4px}
+.formula{font-family:var(--f-mono);font-size:13px;background:var(--soft);border-radius:6px;padding:8px 10px;overflow-x:auto;white-space:pre}
+.corr{overflow:auto}
+.status{font-size:13px;color:var(--muted);min-height:1.2em}
+@media (max-width:600px){
+  select,input[type=text],input[type=number],input[type=search],input[type=date],textarea{font-size:16px}
+  .lead{font-size:14px}
+  .tape{gap:4px 14px;font-size:12px}
+  .upd-s{font-size:12px}
+  .kpi .v{font-size:17px}
+  .kpis{grid-template-columns:repeat(2,minmax(0,1fr))}
+  .panel{padding:12px}
+  .tm-wrap{height:380px}
+  .chart{height:280px}
+  .seg{flex-wrap:wrap}
+  .bar>.field{flex:1 1 140px}
+  .bar>.field>select,.bar>.field>input{width:100%}
+  dialog{width:calc(100vw - 16px);max-height:calc(100vh - 16px)}
+  .dlb .btn{flex:1 1 auto}
+  #m-tx .hm{display:none}
+  #m-form>.btn{flex:1 1 100%}
+}
+@media (prefers-reduced-motion:reduce){*{animation:none!important;transition:none!important}}
+</style>
+</head>
+<body>
+<div class="wrap">
+<header>
+  <div>
+    <div class="lbl">BYMA · Certificados de Depósito Argentinos</div>
+    <h1>Tablero CEDEAR</h1>
+  </div>
+  <p class="lead">Ranking de todo el panel de CEDEARs por rendimiento y riesgo en seis horizontes, y construcción de carteras de renta variable con media-varianza, paridad de riesgo y estimadores con contracción. Las métricas usan la serie del subyacente en dólares, ajustada por dividendos y splits.</p>
+  <div class="tape" id="tape"></div>
+  <div class="upd">
+    <div class="upd-s" id="upd-s"></div>
+    <div class="dlb"><button class="btn ghost" id="upd-b" hidden="">Actualizar ahora</button><button class="btn ghost" id="dl-html" title="Un solo archivo con los datos de hoy; se abre sin conexión salvo los gráficos">Descargar HTML</button><button class="btn ghost" id="dl-zip" title="Página, datos, proceso de actualización y configuración para GitHub Pages">Repositorio GitHub (.zip)</button></div>
+  </div>
+  <p class="note upd-msg" id="upd-msg" hidden=""></p>
+  <p class="note upd-msg" id="dl-msg" hidden=""></p>
+</header>
+
+<nav class="tabs" aria-label="Secciones">
+  <a href="#ranking">CEDEARs</a>
+  <a href="#argentinas">Acciones argentinas</a>
+  <a href="#cartera">Cartera óptima</a>
+  <a href="#validacion">Validación</a>
+  <a href="#mia">Mi cartera</a>
+  <a href="#metodo">Metodología</a>
+</nav>
+
+<!-- RANKING -->
+<section class="view" id="v-ranking">
+  <div class="mhead"><h2 id="mk-t"></h2><p class="note" id="mk-n"></p></div>
+  <div class="bar">
+    <div class="field"><span>Horizonte</span><div class="seg" id="hz"></div></div>
+    <div class="field"><span>Ordenar por</span>
+      <select id="crit">
+        <option value="score">Puntaje compuesto multihorizonte</option>
+        <option value="sharpe">Ratio de Sharpe</option>
+        <option value="sortino">Ratio de Sortino</option>
+        <option value="psr">Sharpe probabilístico (PSR)</option>
+        <option value="alpha">Alfa de Jensen</option>
+        <option value="mu">Esperanza de retorno E[R]</option>
+        <option value="ret">Retorno del período</option>
+        <option value="treynor">Ratio de Treynor</option>
+        <option value="calmar">Ratio de Calmar</option>
+      </select></div>
+    <div class="field" id="f-il" hidden=""><span>Baja liquidez</span><select id="fil"><option value="0">Ocultar</option><option value="1">Mostrar</option></select></div>
+    <div class="field" id="f-type"><span>Tipo</span><select id="ftype"><option value="">Todos</option><option>Acción</option><option>ETF</option></select></div>
+    <div class="field"><span>Sector</span><select id="fsec"><option value="">Todos</option></select></div>
+    <div class="field"><span>Vista</span><div class="seg" id="mode"><button data-m="metrics" aria-pressed="true">Métricas</button><button data-m="heat" aria-pressed="false">Mapa por horizonte</button></div></div>
+    <div class="field" style="flex:1 1 160px"><span>Buscar</span><input type="search" id="q" placeholder="Ticker o empresa"></div>
+  </div>
+  <div class="panel" style="display:grid;gap:10px">
+    <div class="phead"><h2>Mapa de calor</h2><span class="lbl" id="tm-lbl"></span></div>
+    <div class="bar">
+      <div class="field"><span>Tamaño de cada caja</span><select id="tm-size"><option value="mc">Capitalización bursátil</option><option value="v" id="tm-size-v">Monto operado en BYMA</option></select></div>
+      <div class="field"><span>Color</span><select id="tm-col"><option value="ret">Retorno del horizonte</option><option value="sharpe">Ratio de Sharpe</option><option value="score">Puntaje compuesto</option></select></div>
+      <div class="tm-legend" id="tm-leg"></div>
+    </div>
+    <div class="tm-wrap" id="tm"></div>
+    <p class="note" id="tm-note"></p>
+  </div>
+  <div class="grid2">
+    <div class="panel" style="display:grid;gap:10px">
+      <div class="phead"><h2>Mapa riesgo-retorno</h2><span class="lbl" id="sc-lbl"></span></div>
+      <div class="chart md"><canvas id="c-sc"></canvas></div>
+      <div class="legend" id="sc-leg"></div>
+    </div>
+    <div class="panel" style="display:grid;gap:12px;align-content:start">
+      <div class="phead"><h2 id="ld-t">Líderes</h2><span class="lbl" id="ld-l"></span></div>
+      <div class="leaders" id="leaders"></div>
+      <div class="minis" id="rk-minis"></div>
+    </div>
+  </div>
+  <div class="panel" style="display:grid;gap:10px">
+    <div class="phead"><h2>Señales del último dato</h2><span class="lbl" id="sg-lbl"></span></div>
+    <div id="sg"></div>
+    <p class="note" id="sg-note">Bandas condicionales de cada activo: percentiles 5 y 99 de los residuos estandarizados de un GJR-GARCH(1,1) estimado sobre los últimos 3 años, escalados por la volatilidad condicional del día. Un retorno por debajo del P5 es una señal de stop-loss; por encima del P99, de take-profit. Se recalculan con cada actualización de precios.</p>
+  </div>
+  <div class="status" id="rk-status"></div>
+  <div class="hrail" id="rk-rail"><button class="pan" data-d="-1" aria-label="Ver columnas a la izquierda">‹</button><div class="track" title="Arrastrá para recorrer las columnas"><div class="thumb"></div></div><button class="pan" data-d="1" aria-label="Ver columnas a la derecha">›</button><span class="hint">Desplazá las columnas · el ticker queda fijo</span></div>
+  <div class="tbl-wrap" id="rk-wrap"><table id="rk" class="stick"></table></div>
+  <p class="note">Arrastrá la barra sobre la tabla o usá las flechas para recorrer las columnas; el ticker queda fijo. Tocá una fila o un punto del mapa para ver la serie, la esperanza con su intervalo de confianza y las métricas en los seis horizontes. E[R] es la media aritmética anualizada de los retornos diarios; Ret. es el retorno efectivo del período (anualizado como TACC para horizontes de un año o más).</p>
+</section>
+
+<!-- CARTERA -->
+<section class="view" id="v-cartera" hidden="">
+  <div class="panel" style="display:grid;gap:12px">
+    <div class="bar">
+      <div class="field"><span>Mercado</span><select id="p-mkt"><option value="ced">CEDEARs</option><option value="ar">Acciones argentinas</option></select></div>
+      <div class="field"><span>Universo</span><select id="p-univ"><option value="top">Mejores N del ranking</option><option value="manual">Selección manual</option></select></div>
+      <div class="field"><span>N activos</span><input type="number" id="p-n" min="2" max="60" value="20"></div>
+      <div class="field"><span>Criterio de selección</span><select id="p-crit"></select></div>
+      <div class="field" id="p-type-f"><span>Solo</span><select id="p-type"><option value="">Acciones y ETF</option><option>Acción</option><option>ETF</option></select></div>
+      <div class="field"><span>Volumen mín. hoy (ARS M)</span><input type="number" id="p-vol" min="0" step="1" value="5"></div>
+    </div>
+    <div class="bar">
+      <div class="field"><span>Ventana de estimación</span><div class="seg" id="p-win"></div></div>
+      <div class="field"><span>Esperanza μ</span><select id="p-mu">
+        <option value="bs">Bayes-Stein (Jorion)</option><option value="hmm">Regímenes HMM (3 estados)</option><option value="hist">Histórica</option><option value="capm">CAPM de equilibrio</option></select></div>
+      <div class="field"><span>Prima de mercado CAPM</span><input type="number" id="p-mrp" step="0.5" value="5.5"></div>
+      <div class="field"><span>Covarianza Σ</span><select id="p-cov"><option value="lw">Ledoit-Wolf</option><option value="gjr">GJR-GARCH + correlación Ledoit-Wolf</option><option value="s">Muestral</option></select></div>
+      <div class="field"><span>Método</span><select id="p-meth">
+        <option value="maxsharpe">Máximo Sharpe (tangente)</option><option value="minvar">Mínima varianza global</option>
+        <option value="cvar">Media-CVaR (máximo retorno / CVaR)</option><option value="mincvar">Mínimo CVaR</option>
+        <option value="rp">Paridad de riesgo</option><option value="mv">Media-varianza con aversión λ</option><option value="ew">Equiponderada 1/N</option></select></div>
+      <div class="field" id="p-lam-f" hidden=""><span>Aversión λ</span><input type="number" id="p-lam" step="0.5" value="4"></div>
+      <div class="field"><span>Peso máx. por activo <b id="p-cap-v" class="mono"></b></span><input type="range" id="p-cap" min="5" max="100" step="1" value="15"></div>
+    </div>
+    <div class="bar">
+      <div class="field"><span>Capital (ARS)</span><input type="number" id="p-cap-ars" step="100000" value="10000000" style="width:150px"></div>
+      <div class="field"><span>CCL (ARS/USD)</span><input type="number" id="p-ccl" step="1"></div>
+      <div class="field" style="flex:1 1 220px" id="p-man-f" hidden=""><span>Agregar activo</span><input type="text" id="p-add" list="dl-tk" placeholder="Ticker, Enter para sumar"><datalist id="dl-tk"></datalist></div>
+    </div>
+    <div class="pick" id="p-pick" hidden=""></div>
+  </div>
+  <div class="kpis" id="p-kpis"></div>
+  <div class="grid2">
+    <div class="panel" style="display:grid;gap:10px">
+      <div style="display:flex;justify-content:space-between;gap:10px;flex-wrap:wrap;align-items:baseline"><h2>Frontera eficiente</h2><span class="lbl">Retorno esperado vs. volatilidad, anual</span></div>
+      <div class="chart"><canvas id="c-front"></canvas></div>
+      <div class="legend"><span><i style="background:var(--c1)"></i>Frontera con restricciones</span><span><i style="background:var(--c2)"></i>Línea del mercado de capitales</span><span><i style="background:var(--c3)"></i>Activos</span><span><i style="background:var(--ink)"></i>Cartera elegida</span></div>
+    </div>
+    <div class="panel" style="display:grid;gap:10px">
+      <div style="display:flex;justify-content:space-between;gap:10px;flex-wrap:wrap;align-items:baseline"><h2>Composición</h2><span class="lbl">Peso y contribución al riesgo</span></div>
+      <div class="tbl-wrap short" style="max-height:420px"><table id="p-w" class="stick"></table></div>
+    </div>
+  </div>
+  <div class="panel" style="display:grid;gap:10px">
+    <h2>Correlaciones de la cartera</h2>
+    <div class="corr"><canvas id="c-corr"></canvas></div>
+  </div>
+  <div class="grid2">
+    <div class="panel" style="display:grid;gap:10px;align-content:start">
+      <div class="phead"><h2>Régimen de mercado</h2><span class="lbl" id="hmm-lbl"></span></div>
+      <div class="tbl-wrap short"><table id="hmm-t"></table></div>
+      <div class="chart sm"><canvas id="c-hmm"></canvas></div>
+      <p class="note" id="hmm-n"></p>
+    </div>
+    <div class="panel" style="display:grid;gap:10px;align-content:start">
+      <div class="phead"><h2>Volatilidad condicional GJR</h2><span class="lbl">Activos con peso en la cartera</span></div>
+      <div class="tbl-wrap short" style="max-height:460px"><table id="gjr-t" class="stick"></table></div>
+      <p class="note">GJR-GARCH(1,1) por máxima verosimilitud con objetivo de varianza, en la ventana de estimación. γ &gt; 0 indica que las caídas suben la volatilidad más que las subas. Persistencia α + γ/2 + β cercana a 1: los shocks de volatilidad tardan en disiparse.</p>
+    </div>
+  </div>
+</section>
+
+<!-- VALIDACION -->
+<section class="view" id="v-validacion" hidden="">
+  <div class="panel" style="display:grid;gap:10px">
+    <div class="bar">
+      <div class="field"><span>Rebalanceo</span><select id="b-reb"><option value="21">Mensual</option><option value="63" selected="">Trimestral</option><option value="126">Semestral</option></select></div>
+      <div class="field"><span>Costo por operación (pb)</span><input type="number" id="b-tc" value="60" step="5"></div>
+      <div class="field"><span>Horizonte Monte Carlo</span><select id="mc-h"><option value="63">3 meses</option><option value="126">6 meses</option><option value="252" selected="">1 año</option><option value="756">3 años</option></select></div>
+      <div class="field"><span>Centrar Monte Carlo en</span><select id="mc-c"><option value="capm">E[R] de equilibrio CAPM</option><option value="model">E[R] del modelo elegido</option><option value="hist">Media histórica (sin ajustar)</option></select></div>
+      <button class="btn" id="b-run">Correr validación</button>
+    </div>
+    <p class="note">Usa la configuración de la pestaña Cartera. En cada fecha de rebalanceo se elige el universo y se optimiza solo con la información disponible hasta ese día, y se mide el resultado en los días siguientes (fuera de muestra). Incluye costos sobre la rotación.</p>
+    <div class="status" id="b-status"></div>
+  </div>
+  <div class="kpis" id="b-kpis"></div>
+  <div class="panel" style="display:grid;gap:10px">
+    <div style="display:flex;justify-content:space-between;gap:10px;flex-wrap:wrap;align-items:baseline"><h2>Prueba fuera de muestra</h2><span class="lbl">Valor de USD 100, escala logarítmica</span></div>
+    <div class="chart"><canvas id="c-bt"></canvas></div>
+    <div class="legend"><span><i style="background:var(--c1)"></i>Estrategia</span><span><i style="background:var(--c2)"></i><span id="bt-bn">SPY</span></span><span><i style="background:var(--c3)"></i>1/N del mismo universo</span></div>
+  </div>
+  <div class="grid2">
+    <div class="panel" style="display:grid;gap:10px">
+      <div style="display:flex;justify-content:space-between;gap:10px;flex-wrap:wrap;align-items:baseline"><h2>Monte Carlo de la cartera actual</h2><span class="lbl">Bootstrap por bloques, 3.000 trayectorias</span></div>
+      <div class="chart"><canvas id="c-mc"></canvas></div>
+      <div class="legend"><span><i style="background:var(--c1)"></i>Mediana</span><span><i style="background:var(--accent);opacity:.3;height:8px"></i>Bandas de percentiles 5–95 y 25–75</span><span><i style="background:var(--muted)"></i>Percentil 5</span></div>
+    </div>
+    <div class="panel" style="display:grid;gap:10px;align-content:start">
+      <h2>Esperanza y cola</h2>
+      <div class="tbl-wrap short"><table id="mc-t"></table></div>
+      <p class="note">Valores en USD para USD 100 invertidos. El bootstrap remuestrea bloques de 10 días de los retornos diarios de la cartera en la ventana de estimación, de modo que conserva colas gruesas y autocorrelación. Por defecto se recentra la media en el retorno de equilibrio CAPM: la cartera se armó con los activos que mejor rindieron en esa misma ventana, y su media histórica sobrestima lo que cabe esperar.</p>
+    </div>
+  </div>
+</section>
+
+<!-- MI CARTERA -->
+<section class="view" id="v-mia" hidden="">
+  <div class="panel" style="display:grid;gap:12px">
+    <div class="bar">
+      <div class="field"><span>Cartera</span><select id="m-sel"></select></div>
+      <div class="field" style="flex:1 1 200px"><span>Nombre</span><input type="text" id="m-name" maxlength="60"></div>
+      <button class="btn ghost" id="m-new">Nueva</button>
+      <button class="btn ghost" id="m-dup">Duplicar</button>
+      <button class="btn ghost" id="m-del">Eliminar</button>
+    </div>
+    <div class="bar">
+      <div class="field"><span>Moneda de carga y de resultados</span><select id="m-cur"><option value="ARS">Pesos (ARS)</option><option value="USD">Dólares (USD)</option></select></div>
+      <div class="field"><span>Evaluar al</span><input type="date" id="m-ev"></div>
+      <button class="btn ghost" id="m-evl">Último dato</button>
+      <span class="note" id="m-evn"></span>
+    </div>
+  </div>
+  <div class="panel" style="display:grid;gap:10px">
+    <div class="phead"><h2>Operaciones</h2><span class="lbl" id="m-txs"></span></div>
+    <div class="bar" id="m-form">
+      <div class="field"><span>Tipo</span><select id="m-ty"><option value="buy">Compra</option><option value="sell">Venta</option><option value="dep">Aporte de efectivo</option><option value="wd">Retiro de efectivo</option></select></div>
+      <div class="field"><span>Fecha</span><input type="date" id="m-td"></div>
+      <div class="field" id="f-tm"><span>Mercado</span><select id="m-tm"><option value="ced">CEDEAR</option><option value="ar">Acción argentina</option></select></div>
+      <div class="field" id="f-tt" style="flex:1 1 120px"><span>Ticker</span><input type="text" id="m-tt" list="m-dl" placeholder="AAPL, GGAL…" autocomplete="off"><datalist id="m-dl"></datalist></div>
+      <div class="field" id="f-ts" hidden=""><span>Qué se vende</span><select id="m-ts"></select></div>
+      <div class="field" id="f-thw"><span>Cargar por</span><select id="m-thw"></select></div>
+      <div class="field" id="f-tpc" hidden=""><span>% de la tenencia</span><input type="number" id="m-tpc" min="1" max="100" step="1" value="100" style="width:90px"></div>
+      <div class="field" id="f-tn" hidden=""><span>Cantidad</span><input type="number" id="m-tn" min="0" step="1" style="width:110px"></div>
+      <div class="field" id="f-tp" hidden=""><span>Precio ARS por unidad</span><input type="number" id="m-tp" min="0" step="0.01" style="width:130px"></div>
+      <div class="field" id="f-ta"><span id="m-tal">Monto</span><input type="number" id="m-ta" min="0" step="1000" style="width:140px"></div>
+      <div class="field" id="f-tf"><span>Se paga con</span><select id="m-tf"><option value="new">Aporte nuevo</option><option value="cash">Efectivo de la cartera</option></select></div>
+      <div class="field" id="f-tdst" hidden=""><span>Lo cobrado</span><select id="m-tdst"><option value="out">Se retira</option><option value="cash">Queda en efectivo</option></select></div>
+      <button class="btn" id="m-tadd">Agregar</button>
+    </div>
+    <p class="note" id="m-thint" style="margin:0"></p>
+    <div class="tbl-wrap short" style="max-height:440px"><table id="m-tx" class="stick"></table></div>
+    <p class="note" style="margin:0">Cada operación se ejecuta al cierre de su fecha, o de la rueda siguiente si ese día no hubo mercado. Una compra se puede cargar por monto o por cantidad y precio en pesos; si dejás el precio vacío se usa el precio de mercado estimado de ese día. Las compras pagadas con aporte nuevo y los aportes de efectivo cuentan como dinero que entra; las ventas que se retiran y los retiros de efectivo, como dinero que sale. El efectivo rinde la letra del Tesoro.</p>
+  </div>
+  <div class="status" id="m-status"></div>
+  <div class="kpis" id="m-kpis"></div>
+  <div class="panel" style="display:grid;gap:10px">
+    <div class="phead"><h2>Rendimiento por período</h2><span class="lbl" id="m-perl"></span></div>
+    <div class="tbl-wrap short"><table id="m-pt" class="stick"></table></div>
+    <p class="note" style="margin:0">Rendimiento ponderado por tiempo (TWR): encadena los retornos diarios y descuenta los aportes y retiros, así que mide la gestión y no el momento en que entró el dinero. Cada período termina en la fecha de evaluación; los de un año o más muestran también la tasa anual.</p>
+  </div>
+  <div class="panel" style="display:grid;gap:10px">
+    <div class="phead"><h2>Evolución</h2><div class="seg" id="m-view"><button data-v="idx" aria-pressed="true">TWR base 100 USD</button><button data-v="idxa" aria-pressed="false">TWR base 100 ARS</button><button data-v="usd" aria-pressed="false">Valor USD</button><button data-v="ars" aria-pressed="false">Valor ARS</button></div></div>
+    <div class="pick sgp" id="m-ref"></div>
+    <div class="chart"><canvas id="c-m"></canvas></div>
+    <p class="note" id="m-note"></p>
+  </div>
+  <div class="panel" style="display:grid;gap:10px">
+    <div class="phead"><h2>Comparación con los mismos aportes</h2><span class="lbl" id="m-per"></span></div>
+    <div class="tbl-wrap short"><table id="m-cmp" class="stick"></table></div>
+    <p class="note" style="margin:0">Cada referencia recibe los mismos aportes y retiros en las mismas fechas que tu cartera; así se compara qué hubiera pasado con ese mismo dinero. La TIR es el rendimiento ponderado por el dinero (tasa interna de retorno de los flujos y el valor final): anual cuando el período cubre al menos un año y, si es más corto, la del período, porque anualizar plazos breves exagera. La cartera óptima usa los pesos de hoy de la pestaña Cartera, así que mira hacia atrás con información que entonces no existía; la estrategia de Validación sí es fuera de muestra.</p>
+  </div>
+  <div class="panel" style="display:grid;gap:10px">
+    <div class="phead"><h2>Posiciones</h2><span class="lbl" id="m-hd"></span></div>
+    <div class="tbl-wrap short"><table id="m-hold" class="stick"></table></div>
+    <p class="note" style="margin:0">Costo por precio promedio ponderado: cada venta da de baja la parte proporcional del costo, y la diferencia con lo cobrado es el resultado realizado. La cantidad es la que cargaste; en las compras por monto se estima con el precio de mercado de ese día. Los precios en dólares están ajustados por dividendos, así que el valor supone dividendos reinvertidos.</p>
+  </div>
+  <details class="panel"><summary class="lbl" style="cursor:pointer">Exportar o importar carteras y operaciones</summary>
+    <div style="display:grid;gap:8px;margin-top:10px">
+      <p class="note" style="margin:0">Las carteras se guardan en este navegador. Para pasarlas a otro dispositivo, exportalas, copiá el texto y pegalo allá con Importar. También podés pegar operaciones en texto, una por línea, separadas por punto y coma: fecha; tipo (compra, venta, aporte, retiro); mercado (cedear o ar); ticker; cantidad; precio en pesos; monto. Por ejemplo <span class="mono">15/03/2025; compra; cedear; AAPL; 20; 18500</span> o <span class="mono">02/06/2025; compra; ar; GGAL; ; ; 1500000</span>. Una venta sin cantidad ni monto vende toda la tenencia.</p>
+      <textarea id="m-io" rows="6" style="font:12px var(--f-mono);width:100%"></textarea>
+      <div class="bar"><button class="btn ghost" id="m-exp">Exportar todas</button><button class="btn ghost" id="m-expc">Exportar operaciones (texto)</button><button class="btn ghost" id="m-imp">Importar</button><span class="note" id="m-iomsg"></span></div>
+    </div></details>
+</section>
+
+<!-- METODOLOGIA -->
+<section class="view" id="v-metodo" hidden="">
+  <div class="panel meth">
+    <h2>Datos</h2>
+    <p>Universo: todos los CEDEARs con cotización en el panel de BYMA al cierre indicado en la cinta superior. Para cada uno se usa la serie diaria ajustada por dividendos y splits del activo subyacente en su mercado de origen, en dólares (los subyacentes brasileños se convierten con el tipo de cambio BRL/USD). El retorno de un CEDEAR en pesos es aproximadamente el del subyacente multiplicado por la variación del contado con liquidación, así que el ranking en dólares es el relevante para comparar activos entre sí. La tasa libre de riesgo es la letra del Tesoro de EE.UU. a 13 semanas.</p>
+    <p>El ratio de conversión se infiere del precio en BYMA y se valida contra valores enteros; los que no coinciden se marcan con <span class="chip warn">ratio?</span>. Los precios en pesos y el volumen son del panel del día.</p>
+    <p>Acciones argentinas: todas las especies del panel general de BYMA con serie disponible. Los precios locales en pesos, ajustados por dividendos, se pasan a dólares con el contado con liquidación implícito (mediana diaria de GGAL, YPF, PAMP y BMA contra sus ADRs), porque en pesos la inflación domina cualquier comparación. La referencia de mercado para β y alfa es el Merval en dólares CCL; la tasa libre es la misma letra del Tesoro.</p>
+    <p>Calidad de datos de las acciones locales: un salto diario mayor a +85% o una caída mayor a −46% se trata como split no ajustado o precio erróneo y se neutraliza (los mayores movimientos reales del período, como el +45–50% de los bancos el 27/10/2025, quedan intactos). Las especies con más de 30% de ruedas sin cambio de precio en el último año se marcan como de baja liquidez y se ocultan por defecto.</p>
+    <p>Mapa de calor: cada caja tiene un área proporcional a la capitalización bursátil (precio por acciones en circulación, de Yahoo Finance; en ETF, activos netos del fondo; acciones brasileñas y argentinas convertidas a dólares) o, si se elige, al monto operado hoy en BYMA. Las cajas se agrupan por sector con el algoritmo de rectángulos aproximadamente cuadrados de Bruls, Huizing y van Wijk (2000).</p>
+    <h2>Actualización</h2>
+    <p>Los datos se renuevan solos. En días hábiles, cada hora entre las 11:45 y las 18:45 (hora de Buenos Aires), se toman los precios del momento de BYMA, de los subyacentes en EE.UU. y Brasil, el CCL, el Merval, la tasa y las capitalizaciones, y se agregan como último punto de la historia. A las 20:15 se reconstruye todo con los cierres oficiales ajustados y se incorporan las altas y bajas de CEDEARs y del panel. Todas las métricas, rankings, mapas y carteras se recalculan en el navegador con los datos vigentes. Al volver a abrir la página se cargan los datos más recientes.</p>
+    <h2>Descargas y uso en el celular</h2>
+    <p><b>Descargar HTML</b> genera un único archivo con la página y los datos del momento: trae incluida la biblioteca de gráficos, así que funciona sin conexión, y guarda las carteras propias en ese dispositivo. No se actualiza solo. Se abre con un navegador en computadora o con Chrome en Android; en iPhone la vista previa de Archivos no ejecuta páginas, así que conviene usar la versión publicada en GitHub Pages.</p>
+    <p><b>Repositorio GitHub (.zip)</b> trae la página, los datos, el proceso de actualización y la configuración para publicarla gratis en GitHub Pages: una tarea de GitHub Actions corre el proceso en los mismos horarios que acá y vuelve a publicar. La página es instalable como aplicación: en iPhone, Safari → Compartir → Agregar a inicio; en Android, Chrome → menú → Instalar aplicación. El archivo README.md del repositorio explica los pasos.</p>
+    <h2>Métricas por activo</h2>
+    <ul>
+      <li>Horizontes por fecha calendario (1 mes, 3 y 6 meses, 1, 3 y 5 años hasta el último cierre); la anualización usa las ruedas por año de cada mercado (unas 251 en EE.UU. y 244 en BYMA).</li>
+      <li><b>E[R]</b>, esperanza estadística: media aritmética de retornos diarios × ruedas por año, con intervalo de confianza del 95% <span class="mono">E[R] ± 1,96·σ/√n</span>.</li>
+      <li><b>Ret.</b>: retorno efectivo del período; para horizontes de un año o más, tasa anual compuesta (TACC).</li>
+      <li><b>σ</b>: desvío estándar anualizado (× √ruedas por año).</li>
+      <li><b>Sharpe</b> (1966): exceso de retorno sobre la tasa libre por unidad de volatilidad total.</li>
+      <li><b>Sortino</b>: igual que Sharpe pero penaliza solo la volatilidad a la baja.</li>
+      <li><b>β y alfa de Jensen</b> (CAPM, Sharpe-Lintner): regresión de excesos contra SPY; α = E[R] − [r<sub>f</sub> + β(E[R<sub>m</sub>] − r<sub>f</sub>)].</li>
+      <li><b>Treynor</b>: exceso de retorno por unidad de β. <b>Calmar</b>: TACC sobre la máxima caída.</li>
+      <li><b>Máx. caída</b>, <b>VaR</b> y <b>CVaR</b> (pérdida esperada en el peor 5% de los días), históricos.</li>
+      <li><b>PSR</b>, Sharpe probabilístico (Bailey y López de Prado, 2012): probabilidad de que el Sharpe verdadero sea mayor que cero, corrigiendo por asimetría, curtosis y largo de la muestra.</li>
+    </ul>
+    <div class="formula">PSR = Φ( SR·√(n−1) / √(1 − γ₃·SR + (γ₄−1)/4·SR²) )      SR diario, γ₃ asimetría, γ₄ curtosis</div>
+    <p><b>Puntaje compuesto multihorizonte</b>: para 1, 3 y 5 años se estandarizan (puntaje z, recortado a ±3) Sharpe, Sortino, alfa, PSR y CVaR cambiado de signo; se promedian dentro de cada horizonte y luego entre horizontes con pesos 25%, 40% y 35%. Premia la consistencia y evita elegir por un solo período.</p>
+    <h2>Construcción de cartera</h2>
+    <ul>
+      <li><b>Markowitz (1952)</b>: maximiza w'μ − (λ/2)·w'Σw sujeto a pesos no negativos que suman 1 y a un tope por activo. La frontera se traza barriendo λ.</li>
+      <li><b>Máximo Sharpe</b>: la cartera tangente de Tobin (1958), punto de la frontera con mayor (μ<sub>p</sub> − r<sub>f</sub>)/σ<sub>p</sub>.</li>
+      <li><b>Mínima varianza global</b>: no usa μ; es la más robusta al error de estimación de medias.</li>
+      <li><b>Paridad de riesgo</b> (Maillard, Roncalli y Teïletche, 2010): cada activo aporta la misma fracción del riesgo total.</li>
+      <li><b>1/N</b>: referencia de DeMiguel, Garlappi y Uppal (2009), difícil de batir fuera de muestra.</li>
+    </ul>
+    <h2>Estimadores</h2>
+    <ul>
+      <li><b>Bayes-Stein (Jorion, 1986)</b>: contrae cada media hacia la de la cartera de mínima varianza, con una intensidad que crece cuando la muestra es corta o ruidosa.</li>
+      <li><b>CAPM de equilibrio</b>: μ<sub>i</sub> = r<sub>f</sub> + β<sub>i</sub>·prima de mercado; es el punto de partida de Black-Litterman y evita perseguir rendimientos pasados.</li>
+      <li><b>Ledoit-Wolf (2004)</b>: combina la covarianza muestral con un objetivo diagonal, con la intensidad óptima que minimiza el error cuadrático esperado.</li>
+    </ul>
+    <div class="formula">Σ_LW = δ·m·I + (1−δ)·S        μ_BS = (1−w)·μ + w·μ_mv·1,   w = (p+2) / [(p+2) + n·(μ−μ_mv)'Σ⁻¹(μ−μ_mv)]</div>
+    <h2>Volatilidad condicional y regímenes</h2>
+    <ul>
+      <li><b>GJR-GARCH(1,1)</b> (Glosten, Jagannathan y Runkle, 1993): la varianza de mañana depende del shock de hoy, con un término extra γ cuando el shock es negativo (efecto apalancamiento). Se estima por cuasi máxima verosimilitud gaussiana con objetivo de varianza (ω fijado para que la varianza de largo plazo sea la muestral) y Nelder-Mead sobre α, γ y β. En el ranking se estima para cada activo con los últimos 3 años; en la cartera y la validación, con la ventana de estimación y solo la información disponible a cada fecha.</li>
+      <li><b>Covarianza GJR</b>: Σ = D·C·D, con D la volatilidad condicional a mañana de cada activo y C la matriz de correlación de Ledoit-Wolf. Reacciona rápido a los cambios de volatilidad sin estimar un modelo multivariado.</li>
+      <li><b>Regímenes HMM</b>: modelo oculto de Markov gaussiano de 3 estados (bajista, lateral, alcista) estimado con Baum-Welch sobre los retornos diarios de la referencia (SPY para CEDEARs, Merval en dólares CCL para acciones argentinas). La esperanza de cada activo es el promedio de sus retornos medios en cada régimen, ponderado por la probabilidad de estar en ese régimen mañana.</li>
+      <li><b>Señales P5/P99</b>: el retorno del último dato se compara con las bandas μ + z<sub>5%</sub>·σ<sub>t</sub> y μ + z<sub>99%</sub>·σ<sub>t</sub>, donde z son los percentiles empíricos de los residuos estandarizados del GJR y σ<sub>t</sub> la volatilidad condicional del día.</li>
+    </ul>
+    <div class="formula">σ²ₜ₊₁ = ω + (α + γ·1[εₜ&lt;0])·εₜ² + β·σ²ₜ        ω = s²·(1 − α − γ/2 − β)</div>
+    <h2>Media-CVaR</h2>
+    <p>Rockafellar y Uryasev (2000): se maximiza w'μ − λ·CVaR<sub>95%</sub>(w), con el CVaR calculado sobre los escenarios diarios de la ventana de estimación y resuelto por subgradiente proyectado con los mismos topes por activo. "Máximo retorno / CVaR" busca el λ que maximiza el exceso de retorno sobre la tasa libre por unidad de CVaR (ratio STARR); "Mínimo CVaR" ignora μ. Con la covarianza GJR, los escenarios se reescalan por la volatilidad condicional de cada activo (simulación histórica filtrada, Barone-Adesi y otros, 1999), de modo que la cola refleja el nivel de volatilidad actual.</p>
+    <h2>Mi cartera</h2>
+    <p>Seguimiento de una cartera propia a partir de sus operaciones con fecha: compras, ventas (por porcentaje, cantidad o monto), aportes y retiros de efectivo. CEDEARs y acciones argentinas se mezclan y se valúan en dólares (subyacentes en USD, ajustados por dividendos; acciones locales al CCL), y en pesos al CCL implícito de cada fecha. Una compra cargada por cantidad y precio en pesos se pasa a dólares con el CCL del día; si falta el precio se usa el de mercado estimado. Cada operación se ejecuta al cierre de su fecha o de la rueda siguiente. Como CEDEARs y acciones locales tienen calendarios distintos, se usa la unión de ambos y se arrastra el último precio en los días sin rueda de cada mercado. La cartera se evalúa a cualquier fecha: las operaciones posteriores no se cuentan.</p>
+    <ul>
+      <li><b>Rendimiento ponderado por tiempo (TWR)</b>: r<sub>t</sub> = (V<sub>t</sub> − F<sub>t</sub>) / V<sub>t−1</sub> − 1, encadenado día a día, con F<sub>t</sub> los aportes netos del día. No depende de cuándo ni cuánto se aportó: es la medida estándar para comparar la gestión con un índice (normas GIPS).</li>
+      <li><b>Rendimiento ponderado por el dinero (TIR)</b>: la tasa anual r que anula Σ F<sub>i</sub>/(1+r)<sup>t<sub>i</sub></sup> con los aportes como flujos negativos, los retiros y el valor final como positivos (XIRR). Refleja el resultado efectivo del inversor, incluido el momento de cada aporte.</li>
+      <li><b>Costo por precio promedio ponderado</b>: cada venta da de baja la parte proporcional del costo; lo cobrado menos ese costo es el resultado realizado, y el valor actual menos el costo remanente, el no realizado.</li>
+      <li><b>Comparación con los mismos aportes</b>: cada referencia (SPY, Merval CCL, 1/N, cartera óptima, estrategia de Validación, T-Bill) recibe los mismos aportes y retiros en las mismas fechas, y se compara su valor final, su resultado y su TIR con los de la cartera.</li>
+    </ul>
+    <h2>Validación</h2>
+    <p>La prueba fuera de muestra repite la selección y la optimización en cada fecha de rebalanceo con datos hasta ese día, mantiene los pesos con su deriva de precios y cobra el costo indicado sobre la rotación. El Monte Carlo remuestrea bloques de retornos diarios de la cartera (bootstrap estacionario) para estimar la distribución del valor final, la probabilidad de pérdida y la pérdida esperada en la cola.</p>
+    <h2>Limitaciones</h2>
+    <p>El rendimiento pasado no garantiza resultados futuros y las medias históricas tienen errores de estimación grandes: con 3 años de datos el intervalo de confianza de E[R] de una acción típica supera los ±30 puntos anuales. Además, elegir los mejores del ranking introduce sesgo de selección: el E[R] ex ante de la cartera tiende a sobrestimar el resultado futuro, y la prueba fuera de muestra es la referencia más honesta. El universo es la lista actual de CEDEARs, sin los que dejaron de cotizar. Por eso la configuración por defecto usa estimadores contraídos y tope por activo. La serie de los subyacentes no incluye el costo de la brecha entre CEDEAR y subyacente, ni impuestos argentinos. Esta herramienta es analítica y no constituye asesoramiento financiero.</p>
+  </div>
+</section>
+</div>
+<dialog id="dlg"><div class="dlg-h"><div><div class="lbl" id="d-sub"></div><h2 id="d-t"></h2></div><button class="x" id="d-x" aria-label="Cerrar">×</button></div>
+<div class="dlg-b">
+  <div class="bar"><div class="field"><span>Horizonte</span><div class="seg" id="d-hz"></div></div></div>
+  <div class="kpis" id="d-kpis"></div>
+  <div class="chart sm"><canvas id="c-d"></canvas></div>
+  <div class="legend"><span><i style="background:var(--c1)"></i>Activo</span><span><i style="background:var(--c2)"></i><span id="d-bn">SPY</span></span></div>
+  <div class="tbl-wrap short"><table id="d-t2" class="stick"></table></div>
+</div></dialog>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/Chart.js/4.4.1/chart.umd.min.js"></script>
+<script src="data/ced.js"></script>
+<script src="data/ar.js"></script>
+<script id="app">
+"use strict";
+const SRC_BODY=document.body.cloneNode(true);   // copia intacta de la página, para las descargas
+const HAS_CHART=typeof window.Chart==='function';
+if (!HAS_CHART){ // sin la biblioteca de gráficos (sin conexión o bloqueada) el resto del tablero sigue funcionando
+  window.Chart=class{ constructor(){ this.data={datasets:[]}; } destroy(){} update(){} };
+  window.Chart.defaults={font:{},plugins:{}};
+  setTimeout(()=>{ const m=document.getElementById('dl-msg'); if (m){ m.textContent='No se pudo cargar la biblioteca de gráficos: los gráficos no se muestran, el resto del tablero funciona. Conectate a internet y recargá para verlos.'; m.hidden=false; } },0);
+}
+/* ==================== DATOS ==================== */
+/* Un "universo" es un conjunto de activos con su calendario, tasa libre y referencia de mercado.
+   CEDEARs: subyacentes en USD, referencia SPY. Acciones argentinas: en USD al CCL, referencia Merval en CCL. */
+const D_CED = window.__CED, D_AR = window.__AR;
+if (!D_CED || !D_AR){ document.querySelector('.wrap').insertAdjacentHTML('afterbegin','<p class="panel" style="margin-top:16px">No se pudieron cargar los datos del tablero. Recargá la página en unos segundos; si una actualización estaba en curso, ya debería haber terminado.</p>'); throw new Error('sin datos'); }
+let U, D, T, NA, HZ, R, RF, BENCH, byT, M, SCORE, SPK, AF=252;
+function rets(p, T){ const r=new Float64Array(T).fill(NaN); for (let t=1;t<T;t++){ const a=p[t-1], b=p[t]; if (a!=null && b!=null && a>0) r[t]=b/a-1; } return r; }
+function prepU(d, opt){
+  const T=d.dates.length, dt=(x)=>new Date(Date.UTC(+String(x).slice(0,4),+String(x).slice(4,6)-1,+String(x).slice(6,8)));
+  const last=dt(d.dates[T-1]), AF=(T-1)/((last-dt(d.dates[0]))/864e5/365.25);   // ruedas por año del mercado
+  const RF=new Float64Array(T); for (let t=0;t<T;t++) RF[t]=d.rf[t]/100/AF;
+  // horizontes por fecha calendario: el precio inicial es el último cierre en o antes de la fecha objetivo
+  const win=(months)=>{ const g=new Date(last); g.setUTCMonth(g.getUTCMonth()-months); let k=T-1; while (k>0 && dt(d.dates[k])>g) k--; return T-1-k; };
+  const R=d.P.map(p=>rets(p,T)); let BENCH;
+  if (d.B){ R.push(rets(d.B,T)); BENCH=R.length-1; } else BENCH=d.A.findIndex(a=>a.t===opt.bench);
+  return Object.assign({D:d, T, NA:d.A.length, HZ:[['1M',win(1)],['3M',win(3)],['6M',win(6)],['1A',win(12)],['3A',win(36)],['5A',T-1]], AF, R, RF, BENCH,
+    byT:Object.fromEntries(d.A.map((a,i)=>[a.t,i])), SPK:{}, M:null, SCORE:null}, opt);
+}
+function useU(u){
+  if (U===u) return; U=u; ({D,T,NA,HZ,R,RF,BENCH,byT,SPK,AF}=u);
+  if (!u.M){ u.M=HZ.map(([,H])=>D.A.map((_,i)=>metrics(i,H))); u.SCORE=compositeFrom(SCORE_H.map(([h])=>u.M[h])); }
+  M=u.M; SCORE=u.SCORE;
+}
+const UC=prepU(D_CED,{mkt:'ced', bench:'SPY', bn:'SPY', noun:'CEDEARs', col:'CEDEAR'});
+const UA=prepU(D_AR,{mkt:'ar', bn:'Merval', noun:'acciones', col:'Especie'});
+
+/* ==================== FORMATO ==================== */
+const nf = (d)=>new Intl.NumberFormat('es-AR',{minimumFractionDigits:d,maximumFractionDigits:d});
+const F0=nf(0),F1=nf(1),F2=nf(2);
+const pct=(v,d=1)=>v==null||!isFinite(v)?'—':(d===0?F0:d===2?F2:F1).format(v*100)+'%';
+const num=(v,d=2)=>v==null||!isFinite(v)?'—':(d===0?F0:d===1?F1:F2).format(v);
+const sgn=(v)=>v==null||!isFinite(v)?'':(v>=0?'pos':'neg');
+const fdate=(d)=>{d=String(d);return d.slice(6,8)+'/'+d.slice(4,6)+'/'+d.slice(0,4)};
+const esc=(s)=>String(s).replace(/[&<>"]/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;'}[c]));
+function css(v){return getComputedStyle(document.documentElement).getPropertyValue(v).trim()}
+function alpha(hex,a){ const h=hex.replace('#',''); const n=parseInt(h.length===3?h.split('').map(c=>c+c).join(''):h,16); return `rgba(${n>>16&255},${n>>8&255},${n&255},${a})`; }
+
+/* ==================== ESTADÍSTICA ==================== */
+function normCdf(x){ // Abramowitz-Stegun 7.1.26
+  const s=x<0?-1:1; x=Math.abs(x)/Math.SQRT2; const t=1/(1+0.3275911*x);
+  const y=1-(((((1.061405429*t-1.453152027)*t)+1.421413741)*t-0.284496736)*t+0.254829592)*t*Math.exp(-x*x);
+  return 0.5*(1+s*y);
+}
+// métricas de un activo en la ventana (end-H, end]
+function metrics(i, H, end=T-1, minCov=0.9){
+  const r=R[i], rb=R[BENCH], start=end-H+1;
+  if (start<1) return null;
+  let n=0,s=0,s2=0,sx=0,dn=0,sb=0,sbb=0,sxb=0,rfs=0, w=1, peak=1, mdd=0;
+  const arr=[];
+  for (let t=start;t<=end;t++){
+    const x=r[t]; if (!isFinite(x)) continue;
+    const b=rb[t], f=RF[t];
+    n++; s+=x; s2+=x*x; arr.push(x); rfs+=f;
+    const ex=x-f; sx+=ex; if (ex<0) dn+=ex*ex;
+    const eb=b-f; sb+=eb; sbb+=eb*eb; sxb+=ex*eb;
+    w*=1+x; if (w>peak) peak=w; const dd=w/peak-1; if (dd<mdd) mdd=dd;
+  }
+  if (n < H*minCov || n<15) return null;
+  const m=s/n, v=Math.max(s2/n-m*m,1e-12)*n/(n-1), sd=Math.sqrt(v);
+  const mex=sx/n, mb=sb/n, vb=sbb/n-mb*mb, cov=sxb/n-mex*mb;
+  const beta=vb>0?cov/vb:NaN, rfA=rfs/n*AF;
+  const alpha=(mex-beta*mb)*AF;
+  let m3=0,m4=0; for (const x of arr){const d=x-m; m3+=d*d*d; m4+=d*d*d*d;}
+  m3/=n; m4/=n; const sk=m3/Math.pow(sd,3), ku=m4/Math.pow(sd,4);
+  const srd=mex/sd, sr=srd*Math.sqrt(AF);
+  const denom=Math.sqrt(Math.max(1e-9,1-sk*srd+(ku-1)/4*srd*srd));
+  const psr=normCdf(srd*Math.sqrt(n-1)/denom);
+  arr.sort((a,b)=>a-b); const k=Math.max(1,Math.floor(n*0.05));
+  let cv=0; for (let j=0;j<k;j++) cv+=arr[j]; cv/=k;
+  const years=H/AF, tot=w-1, cagr=years>=0.95?Math.pow(w,1/years)-1:tot;
+  const dsd=Math.sqrt(dn/n)*Math.sqrt(AF);
+  const mu=m*AF, se=sd/Math.sqrt(n)*AF;
+  return {n, mu, lo:mu-1.96*se, hi:mu+1.96*se, tstat:m/(sd/Math.sqrt(n)), sd:sd*Math.sqrt(AF), ret:tot, cagr, rf:rfA,
+    sharpe:sr, sortino:dsd>0?mex*AF/dsd:NaN, beta, alpha, r2:vb>0?cov*cov/(vb*(v*(n-1)/n)):NaN,
+    treynor:beta>0.05?mex*AF/beta:NaN, mdd, calmar:mdd<0?cagr/-mdd:NaN, var95:arr[k-1], cvar95:cv, skew:sk, kurt:ku, psr};
+}
+// cálculo de todas las métricas, todas las horizontes, al cierre
+function zscores(vals){
+  const v=vals.filter(x=>x!=null&&isFinite(x)); if (v.length<3) return vals.map(()=>null);
+  const m=v.reduce((a,b)=>a+b,0)/v.length, sd=Math.sqrt(v.reduce((a,b)=>a+(b-m)**2,0)/v.length)||1;
+  return vals.map(x=>x==null||!isFinite(x)?null:Math.max(-3,Math.min(3,(x-m)/sd)));
+}
+const SCORE_H=[[3,0.25],[4,0.40],[5,0.35]];
+function compositeFrom(mats){ // mats: array por horizonte (idx 3,4,5) de métricas por activo
+  const per = SCORE_H.map(([h,wt],j)=>{
+    const ms=mats[j]; const f=(k,sg=1)=>zscores(ms.map(m=>m?sg*m[k]:null));
+    const zs=[f('sharpe'),f('sortino'),f('alpha'),f('psr'),f('cvar95')];
+    return ms.map((_,i)=>{ const v=zs.map(z=>z[i]).filter(x=>x!=null); return v.length?v.reduce((a,b)=>a+b,0)/v.length:null; });
+  });
+  return mats[0].map((_,i)=>{ let s=0,w=0; SCORE_H.forEach(([,wt],j)=>{const v=per[j][i]; if(v!=null){s+=wt*v;w+=wt;}}); return w>=0.25?s/w:null; });
+}
+useU(UC);
+
+/* ==================== ÁLGEBRA ==================== */
+function covMatrix(idx, start, end, shrink){
+  const p=idx.length, X=[]; const means=new Float64Array(p);
+  for (let t=start;t<=end;t++){ const row=new Float64Array(p); let ok=true;
+    for (let j=0;j<p;j++){ const x=R[idx[j]][t]; if(!isFinite(x)){ok=false;break;} row[j]=x; }
+    if (ok) X.push(row); }
+  const n=X.length; for (const row of X) for (let j=0;j<p;j++) means[j]+=row[j]/n;
+  for (const row of X) for (let j=0;j<p;j++) row[j]-=means[j];
+  const S=Array.from({length:p},()=>new Float64Array(p));
+  for (const row of X) for (let a=0;a<p;a++){ const ra=row[a]; for (let b=a;b<p;b++) S[a][b]+=ra*row[b]; }
+  for (let a=0;a<p;a++) for (let b=a;b<p;b++){ S[a][b]/=n; S[b][a]=S[a][b]; }
+  let delta=0;
+  if (shrink && n>p/4){
+    let m=0; for (let a=0;a<p;a++) m+=S[a][a]; m/=p;
+    let d2=0, s2=0; for (let a=0;a<p;a++) for (let b=0;b<p;b++){ const v=S[a][b]-(a===b?m:0); d2+=v*v; s2+=S[a][b]*S[a][b]; }
+    let b2=0; for (const row of X){ let q=0; for (let j=0;j<p;j++) q+=row[j]*row[j]; b2+=q*q; }
+    b2=(b2/n - s2)/n; b2=Math.min(Math.max(b2,0),d2); delta=d2>0?b2/d2:0;
+    for (let a=0;a<p;a++) for (let b=0;b<p;b++) S[a][b]=(1-delta)*S[a][b]+(a===b?delta*m:0);
+  }
+  return {S, means, n, delta, X};
+}
+function cholSolve(S, b){ // resuelve S x = b
+  const p=S.length, L=Array.from({length:p},()=>new Float64Array(p));
+  for (let i=0;i<p;i++) for (let j=0;j<=i;j++){ let s=S[i][j]; for (let k=0;k<j;k++) s-=L[i][k]*L[j][k];
+    L[i][j]= i===j? Math.sqrt(Math.max(s,1e-14)) : s/L[j][j]; }
+  const y=new Float64Array(p); for (let i=0;i<p;i++){ let s=b[i]; for (let k=0;k<i;k++) s-=L[i][k]*y[k]; y[i]=s/L[i][i]; }
+  const x=new Float64Array(p); for (let i=p-1;i>=0;i--){ let s=y[i]; for (let k=i+1;k<p;k++) s-=L[k][i]*x[k]; x[i]=s/L[i][i]; }
+  return x;
+}
+const mv=(S,w)=>{ const p=w.length,o=new Float64Array(p); for(let a=0;a<p;a++){let s=0;const r=S[a];for(let b=0;b<p;b++) s+=r[b]*w[b]; o[a]=s;} return o; };
+const dot=(a,b)=>{let s=0;for(let i=0;i<a.length;i++) s+=a[i]*b[i];return s;};
+function projCapped(v, cap){ // proyección euclídea sobre {0<=w<=cap, sum w=1}
+  const p=v.length; cap=Math.max(cap,1/p+1e-9);
+  let lo=Math.min(...v)-cap-1, hi=Math.max(...v)+1;
+  for (let it=0;it<80;it++){ const tau=(lo+hi)/2; let s=0; for (let i=0;i<p;i++) s+=Math.min(cap,Math.max(0,v[i]-tau)); if (s>1) lo=tau; else hi=tau; }
+  const tau=(lo+hi)/2, w=new Float64Array(p); for (let i=0;i<p;i++) w[i]=Math.min(cap,Math.max(0,v[i]-tau)); return w;
+}
+// max w'mu - lam/2 w'Sw  (FISTA)
+function solveMV(mu, S, lam, cap, w0){
+  const p=mu.length; let L=0; for (let a=0;a<p;a++){let s=0;for(let b=0;b<p;b++) s+=Math.abs(S[a][b]); L=Math.max(L,s);}
+  const eta=1/(lam*L+1e-12);
+  let w=w0?Float64Array.from(w0):projCapped(new Float64Array(p).fill(1/p),cap), y=Float64Array.from(w), tk=1;
+  for (let it=0;it<600;it++){
+    const g=mv(S,y); const z=new Float64Array(p); for (let i=0;i<p;i++) z[i]=y[i]+eta*(mu[i]-lam*g[i]);
+    const wn=projCapped(z,cap); const tn=(1+Math.sqrt(1+4*tk*tk))/2;
+    let diff=0; for (let i=0;i<p;i++){ y[i]=wn[i]+((tk-1)/tn)*(wn[i]-w[i]); diff+=Math.abs(wn[i]-w[i]); }
+    w=wn; tk=tn; if (diff<1e-9) break;
+  }
+  return w;
+}
+function stats(w, mu, S, rf){ const m=dot(w,mu), v=dot(w,mv(S,w)), s=Math.sqrt(Math.max(v,0)); return {m,s,sh:(m-rf)/s}; }
+function riskParity(S, cap){
+  const p=S.length; let w=new Float64Array(p).fill(1/p);
+  for (let it=0;it<500;it++){
+    const Sw=mv(S,w), v=dot(w,Sw); let ch=0;
+    const nw=new Float64Array(p); for (let i=0;i<p;i++){ const rc=w[i]*Sw[i]/v; nw[i]=w[i]*Math.sqrt((1/p)/Math.max(rc,1e-12)); }
+    let s=nw.reduce((a,b)=>a+b,0); for (let i=0;i<p;i++) nw[i]/=s;
+    const pw=projCapped(nw,cap); for (let i=0;i<p;i++) ch+=Math.abs(pw[i]-w[i]); w=pw; if (ch<1e-10) break;
+  }
+  return w;
+}
+/* estima mu y Sigma (anualizados) y optimiza */
+function buildPortfolio(idx, end, cfg){
+  const H=cfg.win, start=end-H+1, p=idx.length;
+  const {S:Sd, means, n, delta} = covMatrix(idx,start,end,cfg.cov!=='s');
+  let rf=0, cnt=0; for (let t=start;t<=end;t++){rf+=RF[t];cnt++;} rf=rf/cnt*AF;
+  let S, fits=null;
+  if (cfg.cov==='gjr'){ // Σ = D·C·D con D = σ condicional GJR a t+1 y C = correlación Ledoit-Wolf
+    fits=idx.map(i=>gjrFit(i,start,end));
+    const sd=idx.map((_,j)=>fits[j]?Math.sqrt(fits[j].hN):Math.sqrt(Sd[j][j]));
+    S=Sd.map((r,a)=>Float64Array.from(r,(v,b)=>v/Math.sqrt(Sd[a][a]*Sd[b][b])*sd[a]*sd[b]*AF));
+  } else S=Sd.map(r=>Float64Array.from(r,v=>v*AF));
+  const X=scenarios(idx,start,end,fits);
+  let mu, shrinkW=0;
+  const muH=Float64Array.from(means,v=>v*AF);
+  if (cfg.mu==='hist') mu=muH;
+  else if (cfg.mu==='hmm'){ const hm=hmmMu(idx,start,end); mu=hm?Float64Array.from(hm):muH; }
+  else if (cfg.mu==='capm'){
+    mu=new Float64Array(p); idx.forEach((i,j)=>{ const m=metrics(i,H,end,0.5); const b=m&&isFinite(m.beta)?m.beta:1; mu[j]=rf+b*cfg.mrp/100; });
+  } else { // Bayes-Stein de Jorion con unidades diarias
+    const one=new Float64Array(p).fill(1), Si1=cholSolve(Sd,one), den=dot(one,Si1);
+    const mug=dot(Si1,means)/den; const d=Float64Array.from(means,v=>v-mug);
+    const q=dot(d,cholSolve(Sd,d)); shrinkW=(p+2)/((p+2)+n*q); shrinkW=Math.min(1,Math.max(0,shrinkW));
+    mu=Float64Array.from(means,v=>((1-shrinkW)*v+shrinkW*mug)*AF);
+  }
+  const cap=cfg.cap; let w;
+  const minv=solveMV(new Float64Array(p),S,1,cap);
+  if (cfg.meth==='ew') w=projCapped(new Float64Array(p).fill(1/p),cap);
+  else if (cfg.meth==='minvar') w=minv;
+  else if (cfg.meth==='rp') w=riskParity(S,cap);
+  else if (cfg.meth==='mv') w=solveMV(mu,S,cfg.lam,cap,minv);
+  else if (cfg.meth==='cvar'||cfg.meth==='mincvar'){
+    const md=Float64Array.from(mu,v=>v/AF), rfd=rf/AF;
+    const wmin=solveCVaR(new Float64Array(p),X,1,cap,null,300);
+    if (cfg.meth==='mincvar') w=wmin;
+    else { // λ que maximiza el exceso de retorno por unidad de CVaR (STARR)
+      const starr=(ww)=>(dot(ww,md)-rfd)/Math.max(cvarOf(ww,X),1e-9);
+      const f=(ll)=>{ const ww=solveCVaR(md,X,Math.exp(ll),cap,wmin,150); return [starr(ww),ww]; };
+      let a=Math.log(0.01), b=Math.log(50); const g=(Math.sqrt(5)-1)/2;
+      let c=b-g*(b-a), d=a+g*(b-a), fc=f(c), fd=f(d);
+      for (let it=0;it<14;it++){ if (fc[0]>fd[0]){ b=d; d=c; fd=fc; c=b-g*(b-a); fc=f(c);} else { a=c; c=d; fc=fd; d=a+g*(b-a); fd=f(d);} }
+      w=fc[0]>fd[0]?fc[1]:fd[1]; if (starr(wmin)>starr(w)) w=wmin;
+    }
+  }
+  else { // máximo Sharpe: búsqueda dorada en log(lambda)
+    const ex=Float64Array.from(mu,v=>v-rf);
+    const f=(ll)=>{ const ww=solveMV(ex,S,Math.exp(ll),cap,minv); return [stats(ww,mu,S,rf).sh,ww]; };
+    let a=Math.log(0.05), b=Math.log(2000); const g=(Math.sqrt(5)-1)/2;
+    let c=b-g*(b-a), d=a+g*(b-a), fc=f(c), fd=f(d);
+    for (let it=0;it<22;it++){ if (fc[0]>fd[0]){ b=d; d=c; fd=fc; c=b-g*(b-a); fc=f(c);} else { a=c; c=d; fc=fd; d=a+g*(b-a); fd=f(d);} }
+    w=fc[0]>fd[0]?fc[1]:fd[1];
+    const mvst=stats(minv,mu,S,rf); if (mvst.sh>stats(w,mu,S,rf).sh) w=minv;
+  }
+  return {w, mu, S, rf, muH, delta, shrinkW, n, minv, X, fits, start, end};
+}
+
+/* ==================== GJR-GARCH · HMM · CVaR ==================== */
+function nelderMead(f, x0, step, iters){
+  const n=x0.length; let P=[x0.slice()]; for (let i=0;i<n;i++){ const x=x0.slice(); x[i]+=step[i]; P.push(x); }
+  let F=P.map(f);
+  for (let it=0;it<iters;it++){
+    const o=F.map((v,i)=>i).sort((a,b)=>F[a]-F[b]); P=o.map(i=>P[i]); F=o.map(i=>F[i]);
+    if (Math.abs(F[n]-F[0])<1e-10*(1+Math.abs(F[0]))) break;
+    const c=new Array(n).fill(0); for (let i=0;i<n;i++) for (let j=0;j<n;j++) c[j]+=P[i][j]/n;
+    const xr=c.map((v,j)=>v+(v-P[n][j])), fr=f(xr);
+    if (fr<F[0]){ const xe=c.map((v,j)=>v+2*(v-P[n][j])), fe=f(xe); if (fe<fr){P[n]=xe;F[n]=fe;} else {P[n]=xr;F[n]=fr;} }
+    else if (fr<F[n-1]){ P[n]=xr; F[n]=fr; }
+    else { const xc=c.map((v,j)=>v+0.5*(P[n][j]-v)), fc=f(xc);
+      if (fc<F[n]){ P[n]=xc; F[n]=fc; } else for (let i=1;i<=n;i++){ P[i]=P[i].map((v,j)=>P[0][j]+0.5*(v-P[0][j])); F[i]=f(P[i]); } }
+  }
+  let b=0; for (let i=1;i<=n;i++) if (F[i]<F[b]) b=i; return {x:P[b], f:F[b]};
+}
+// GJR-GARCH(1,1) con objetivo de varianza, QML gaussiana, sobre los retornos finitos de (start, end]
+function gjrFitU(u, i, start, end){
+  const key=i+'|'+start+'|'+end, C=u.GC||(u.GC={}); if (C[key]!==undefined) return C[key];
+  const r=u.R[i], ts=[], x=[]; for (let t=Math.max(1,start);t<=end;t++){ const v=r[t]; if (isFinite(v)){ ts.push(t); x.push(v); } }
+  const n=x.length; if (n<200) return C[key]=null;
+  let m=0; for (const v of x) m+=v; m/=n;
+  const e=new Float64Array(n); let s2=0; for (let k=0;k<n;k++){ e[k]=x[k]-m; s2+=e[k]*e[k]; } s2/=n;
+  if (!(s2>1e-10)) return C[key]=null;
+  const h=new Float64Array(n);
+  const nll=(p)=>{ const a=p[0], g=p[1], b=p[2];
+    if (a<0||b<0||a+g<0||a>0.5||g>0.7||b>0.998) return 1e12; const pers=a+g/2+b; if (pers>=0.9985) return 1e12;
+    const w=s2*(1-pers); let hp=s2, L=0;
+    for (let k=0;k<n;k++){ if (k>0){ const ek=e[k-1]; hp=w+(a+(ek<0?g:0))*ek*ek+b*hp; } h[k]=hp; L+=Math.log(hp)+e[k]*e[k]/hp; }
+    return 0.5*L; };
+  let best=nelderMead(nll,[0.05,0.08,0.85],[0.03,0.05,0.06],300);
+  const alt=nelderMead(nll,[0.10,0.02,0.70],[0.04,0.04,0.10],300); if (alt.f<best.f) best=alt;
+  if (!(best.f<1e11)) return C[key]=null;
+  nll(best.x);
+  const [a,g,b]=best.x, pers=a+g/2+b, w=s2*(1-pers), eL=e[n-1], hN=w+(a+(eL<0?g:0))*eL*eL+b*h[n-1];
+  const z=new Float64Array(n-1); for (let k=0;k<n-1;k++) z[k]=e[k]/Math.sqrt(h[k]); z.sort();
+  const q05=z[Math.floor(0.05*(n-2))], q99=z[Math.floor(0.99*(n-2))];
+  const hs=new Float64Array(end-start+1).fill(NaN); for (let k=0;k<n;k++) hs[ts[k]-start]=h[k];
+  const sT=Math.sqrt(h[n-1]), lo=m+q05*sT, hi=m+q99*sT, rL=x[n-1], onEnd=ts[n-1]===end;
+  return C[key]={a, gm:g, b, pers, m, s2, hN, hT:h[n-1], sN:Math.sqrt(hN*u.AF), sH:Math.sqrt(s2*u.AF), ratio:Math.sqrt(hN/s2),
+    q05, q99, lo, hi, rLast:rL, lastT:ts[n-1], sig:onEnd?(rL<lo?-1:rL>hi?1:0):0, start, hs, n};
+}
+const gjrFit=(i,start,end)=>gjrFitU(U,i,start,end);
+// ranking: GJR de cada activo con los últimos 3 años, en segundo plano
+function startGJR(u){
+  if (u.G||u.Gbusy) return; u.Gbusy=true;
+  const G=new Array(u.NA).fill(null), s=Math.max(1,u.T-u.HZ[4][1]); let k=0;
+  const tick=()=>{ const t0=performance.now(); while (k<u.NA && performance.now()-t0<35){ G[k]=gjrFitU(u,k,s,u.T-1); k++; }
+    if (U===u){ const el=document.getElementById('sg-lbl'); if (el) el.textContent=`Estimando GJR · ${k} de ${u.NA}`; }
+    if (k<u.NA) setTimeout(tick,0);
+    else { u.G=G; u.Gbusy=false; if (U===u && !document.getElementById('v-ranking').hidden) renderRanking(); } };
+  setTimeout(tick,60);
+}
+// HMM gaussiano de K estados (Baum-Welch con escalado)
+function fitHMM(x, K=3, iters=250){
+  const n=x.length; let m0=0; for (const v of x) m0+=v; m0/=n; let v0=0; for (const v of x) v0+=(v-m0)**2; v0/=n; const s0=Math.sqrt(v0);
+  let mu=[m0-0.15*s0, m0, m0+0.08*s0], va=[3.0*v0, 1.0*v0, 0.45*v0], pi=[1/3,1/3,1/3];
+  let A=[[0.95,0.04,0.01],[0.03,0.94,0.03],[0.01,0.04,0.95]];
+  const al=new Float64Array(n*K), be=new Float64Array(n*K), B=new Float64Array(n*K), c=new Float64Array(n), ga=new Float64Array(n*K);
+  let ll=-Infinity; const floor=0.02*v0;
+  for (let it=0;it<iters;it++){
+    for (let t=0;t<n;t++) for (let k=0;k<K;k++){ const d=x[t]-mu[k]; B[t*K+k]=Math.exp(-0.5*d*d/va[k])/Math.sqrt(2*Math.PI*va[k])+1e-300; }
+    let s=0; for (let k=0;k<K;k++){ al[k]=pi[k]*B[k]; s+=al[k]; } c[0]=s; for (let k=0;k<K;k++) al[k]/=s;
+    for (let t=1;t<n;t++){ s=0; for (let k=0;k<K;k++){ let a=0; for (let j=0;j<K;j++) a+=al[(t-1)*K+j]*A[j][k]; a*=B[t*K+k]; al[t*K+k]=a; s+=a; } c[t]=s; for (let k=0;k<K;k++) al[t*K+k]/=s; }
+    for (let k=0;k<K;k++) be[(n-1)*K+k]=1;
+    for (let t=n-2;t>=0;t--) for (let j=0;j<K;j++){ let b=0; for (let k=0;k<K;k++) b+=A[j][k]*B[(t+1)*K+k]*be[(t+1)*K+k]; be[t*K+j]=b/c[t+1]; }
+    let nl=0; for (let t=0;t<n;t++) nl+=Math.log(c[t]);
+    const xi=[[0,0,0],[0,0,0],[0,0,0]], gs=[0,0,0], gx=[0,0,0];
+    for (let t=0;t<n;t++){ let z=0; for (let k=0;k<K;k++){ ga[t*K+k]=al[t*K+k]*be[t*K+k]; z+=ga[t*K+k]; } for (let k=0;k<K;k++){ ga[t*K+k]/=z; gs[k]+=ga[t*K+k]; gx[k]+=ga[t*K+k]*x[t]; } }
+    for (let t=0;t<n-1;t++){ for (let j=0;j<K;j++) for (let k=0;k<K;k++) xi[j][k]+=al[t*K+j]*A[j][k]*B[(t+1)*K+k]*be[(t+1)*K+k]/c[t+1]; }
+    pi=[ga[0],ga[1],ga[2]];
+    A=xi.map(r=>{ const z=r.reduce((p,q)=>p+q,0)||1; return r.map(v=>Math.max(v/z,1e-6)); });
+    mu=gx.map((v,k)=>v/Math.max(gs[k],1e-12));
+    va=mu.map((m,k)=>{ let q=0; for (let t=0;t<n;t++) q+=ga[t*K+k]*(x[t]-m)**2; return Math.max(q/Math.max(gs[k],1e-12),floor); });
+    if (Math.abs(nl-ll)<1e-8*Math.abs(nl)) { ll=nl; break; } ll=nl;
+  }
+  const ord=[0,1,2].sort((p,q)=>mu[p]-mu[q]);       // 0 bajista, 1 lateral, 2 alcista
+  const last=ord.map(k=>al[(n-1)*K+k]);
+  const next=ord.map(k=>{ let s=0; for (let j=0;j<K;j++) s+=al[(n-1)*K+j]*A[j][k]; return s; });
+  const gam=new Float64Array(n*K); for (let t=0;t<n;t++) ord.forEach((k,j)=>{ gam[t*K+j]=ga[t*K+k]; });
+  return {mu:ord.map(k=>mu[k]), sd:ord.map(k=>Math.sqrt(va[k])), A:ord.map(j=>ord.map(k=>A[j][k])), last, next, gamma:gam, ll};
+}
+function hmmAt(start, end){
+  const key=start+'|'+end, C=U.HC||(U.HC={}); if (C[key]!==undefined) return C[key];
+  const rb=R[BENCH], ts=[], x=[]; for (let t=Math.max(1,start);t<=end;t++){ const v=rb[t]; if (isFinite(v)){ ts.push(t); x.push(v); } }
+  if (x.length<120) return C[key]=null;
+  // se recortan los saltos extremos (más de 5 desvíos robustos) para que los estados describan regímenes y no días aislados
+  const srt=Float64Array.from(x).sort(), med=srt[Math.floor(x.length/2)], dev=Float64Array.from(x,v=>Math.abs(v-med)).sort(), rs=1.4826*dev[Math.floor(x.length/2)];
+  const xw=x.map(v=>Math.max(med-5*rs,Math.min(med+5*rs,v)));
+  const H=fitHMM(xw); H.ts=ts; return C[key]=H;
+}
+// esperanza por régimen: medias de cada activo en cada estado, ponderadas por la probabilidad del estado mañana
+function hmmMu(idx, start, end){
+  const H=hmmAt(start,end); if (!H) return null;
+  return idx.map(i=>{ const r=R[i]; let tot=0;
+    for (let k=0;k<3;k++){ let s=0, w=0; for (let j=0;j<H.ts.length;j++){ const x=r[H.ts[j]]; if (isFinite(x)){ const g=H.gamma[j*3+k]; s+=g*x; w+=g; } } tot+=H.next[k]*(w>1e-9?s/w:0); }
+    return tot*AF; });
+}
+// escenarios diarios (filas con todos los activos), filtrados por GJR si hay ajustes
+function scenarios(idx, start, end, fits){
+  const X=[], p=idx.length;
+  for (let t=Math.max(1,start);t<=end;t++){ const row=new Float64Array(p); let ok=true;
+    for (let j=0;j<p;j++){ let x=R[idx[j]][t]; if (!isFinite(x)){ ok=false; break; }
+      const f=fits&&fits[j]; if (f){ const h=f.hs[t-f.start]; if (isFinite(h)&&h>0) x=f.m+(x-f.m)*Math.sqrt(f.hN/h); } row[j]=x; }
+    if (ok) X.push(row); }
+  return X;
+}
+function cvarOf(w, X){ const n=X.length, k=Math.max(1,Math.floor(n*0.05)), pr=new Float64Array(n); for (let t=0;t<n;t++) pr[t]=dot(w,X[t]); pr.sort(); let s=0; for (let j=0;j<k;j++) s+=pr[j]; return -s/k; }
+// max w'md − lam·CVaR95(w), subgradiente proyectado (Rockafellar-Uryasev)
+function solveCVaR(md, X, lam, cap, w0, iters=200){
+  const n=X.length, p=md.length, k=Math.max(1,Math.floor(n*0.05));
+  let w=w0?Float64Array.from(w0):projCapped(new Float64Array(p).fill(1/p),cap), best=w, bf=-Infinity;
+  const pr=new Float64Array(n), ord=new Uint32Array(n);
+  for (let it=0;it<iters;it++){
+    for (let t=0;t<n;t++){ pr[t]=dot(w,X[t]); ord[t]=t; }
+    ord.sort((a,b)=>pr[a]-pr[b]);
+    let cv=0; const g=Float64Array.from(md);
+    for (let j=0;j<k;j++){ const t=ord[j], row=X[t]; cv-=pr[t]; for (let q=0;q<p;q++) g[q]+=lam*row[q]/k; }
+    cv/=k; const f=dot(w,md)-lam*cv; if (f>bf){ bf=f; best=Float64Array.from(w); }
+    let gm=0; for (let q=0;q<p;q++) gm=Math.max(gm,Math.abs(g[q])); if (gm<1e-15) break;
+    const eta=0.08/Math.sqrt(1+it), z=new Float64Array(p); for (let q=0;q<p;q++) z[q]=w[q]+eta*g[q]/gm;
+    w=projCapped(z,cap);
+  }
+  return best;
+}
+
+/* ==================== ESTADO Y RUTEO ==================== */
+const ST = {hz:3, crit:'score', type:'', sec:'', q:'', mode:'metrics', sortKey:null, sortDir:-1, il:false};
+const PC = {mkt:'ced', univ:'top', n:20, crit:'score', type:'', vol:5, wk:'3A', win:756, mu:'bs', mrp:5.5, cov:'lw', meth:'maxsharpe', lam:4, cap:0.15, ars:10000000, ccl:D.ccl, manual:[]};
+try { const s=JSON.parse(localStorage.getItem('cedear-cfg')||'null');
+  if (s){ Object.assign(PC,s,{ccl:D.ccl}); if (!s.wk && s.win) PC.wk=s.win===252?'1A':s.win===756?'3A':'5A'; } } catch(e){}
+if (!['ced','ar'].includes(PC.mkt)) PC.mkt='ced'; if (!['1A','3A','5A'].includes(PC.wk)) PC.wk='3A';
+const mktU=()=>PC.mkt==='ar'?UA:UC;
+const winOf=()=>({'1A':HZ[3][1],'3A':HZ[4][1],'5A':T-1})[PC.wk];
+const save=()=>{ try{ localStorage.setItem('cedear-cfg',JSON.stringify(PC)); }catch(e){} };
+const VIEWS=['ranking','argentinas','cartera','validacion','mia','metodo'];
+function route(){
+  const h=(location.hash||'#ranking').slice(1); const v=VIEWS.includes(h)?h:'ranking';
+  const sec=v==='argentinas'?'ranking':v;
+  ['ranking','cartera','validacion','mia','metodo'].forEach(x=>{ document.getElementById('v-'+x).hidden = x!==sec; });
+  document.querySelectorAll('nav.tabs a').forEach(a=>{ const on=a.getAttribute('href')==='#'+v; a.setAttribute('aria-current', on?'page':'false'); if (on&&a.scrollIntoView) a.scrollIntoView({block:'nearest',inline:'center'}); });
+  if (sec==='ranking') setMarket(v==='argentinas'?UA:UC); else useU(mktU());
+  if (v==='cartera') renderPortfolio();
+  if (v==='mia') renderMine();
+  if (v==='validacion' && !BT_DONE) document.getElementById('b-status').textContent='Tocá “Correr validación” para la prueba fuera de muestra con la configuración actual.';
+}
+window.addEventListener('hashchange',route);
+
+/* ==================== CINTA ==================== */
+(function(){
+  const spy=M[3][BENCH], rf=D.rf[T-1];
+  const nE=D.A.filter(a=>a.k==='Acción').length, nF=NA-nE;
+  document.getElementById('tape').innerHTML =
+    `<span>Último dato <b>${fdate(D.asof)}</b></span><span>CEDEARs analizados <b>${NA}</b> (${nE} acciones · ${nF} ETF)</span>`+
+    `<span>CCL <b>${num(D.ccl,2)}</b></span><span>T-Bill 13s <b>${num(rf,2)}%</b></span>`+
+    `<span>SPY 1A <b class="${sgn(spy&&spy.ret)}">${pct(spy&&spy.ret)}</b></span>`+
+    (()=>{ const B=D_AR.B, n=B.length, r=B[n-1]/B[n-1-UA.HZ[3][1]]-1; return `<span>Merval CCL 1A <b class="${sgn(r)}">${pct(r)}</b></span>`; })()+`<span>Historia <b>${fdate(D.dates[0])} → ${fdate(D.asof)}</b></span>`;
+})();
+
+/* ==================== ACTUALIZACIÓN ==================== */
+const TRIGGER_ID = 'trig_01GTLnFWfGGVLNVAa1R2X6Wq';
+(function(){
+  const f=(u)=>u?`${u.slice(8,10)}/${u.slice(5,7)} ${u.slice(11,16)}`:'—';
+  const chip=(d)=>d.live?'<span class="live"><i></i>Precio en rueda</span>':'<span class="live close"><i></i>Cierre oficial</span>';
+  document.getElementById('upd-s').innerHTML=
+    `<span>CEDEARs ${chip(D_CED)} actualizado ${f(D_CED.upd)}</span><span>·</span><span>Acciones argentinas ${chip(D_AR)} actualizado ${f(D_AR.upd)}</span>`+
+    `<span>·</span><span>Hora de Buenos Aires. Se actualiza cada hora en rueda y con el cierre a la noche.</span>`;
+  const btn=document.getElementById('upd-b'), msg=document.getElementById('upd-msg');
+  const say=(t)=>{ msg.textContent=t; msg.hidden=false; };
+  if (!window.claude || !window.claude.use || TRIGGER_ID.startsWith('__')) return;
+  window.claude.use('mcp').then(mcp=>{
+    if (!mcp) return;
+    btn.hidden=false;
+    btn.addEventListener('click',async()=>{
+      btn.disabled=true; say('Pidiendo la actualización…');
+      try {
+        await mcp.callTool('Claude Code Remote','fire_trigger',{trigger_id:TRIGGER_ID},{cache:false});
+        say('Actualización en curso. Tarda entre 2 y 5 minutos; la página se recarga sola cuando termina.');
+        setTimeout(()=>{ btn.disabled=false; },120000);
+      } catch(e){
+        btn.disabled=false;
+        const c=e&&e.code;
+        if (c==='approval_required'||c==='not_in_manifest') say('Hace falta tu permiso para usar la conexión con Claude Code. Tocá el botón con el tablero abierto en claude.ai y aceptá el pedido.');
+        else if (c==='server_not_connected'||c==='needs_reauth') say('Esta acción usa la conexión Claude Code Remote de tu cuenta. Revisala en claude.ai, Configuración, Conectores.');
+        else if (c==='tool_error') say('No se pudo iniciar la actualización. Solo la cuenta dueña del tablero puede pedirla; si sos vos, probá de nuevo en unos minutos.');
+        else if (c==='server_unavailable') say('El servicio no respondió. Puede que la actualización haya arrancado igual; esperá unos minutos antes de volver a pedirla.');
+        else say('No se pudo pedir la actualización ahora. La próxima actualización programada corre igual.');
+      }
+    });
+  });
+})();
+
+/* ==================== RANKING ==================== */
+const COLS = [
+  {k:'ret', l:'Ret.', f:v=>pct(v), c:true},
+  {k:'mu', l:'E[R]', f:v=>pct(v), c:true},
+  {k:'ci', l:'IC 95% E[R]', f:(v,m)=>m?`${pct(m.lo,0)} a ${pct(m.hi,0)}`:'—', nosort:true},
+  {k:'sd', l:'<span class="gk">σ</span>', f:v=>pct(v)},
+  {k:'sharpe', l:'Sharpe', f:v=>num(v), c:true},
+  {k:'sortino', l:'Sortino', f:v=>num(v), c:true},
+  {k:'psr', l:'PSR', f:v=>pct(v,0)},
+  {k:'beta', l:'<span class="gk">β</span>', f:v=>num(v)},
+  {k:'alpha', l:'<span class="gk">α</span> Jensen', f:v=>pct(v), c:true},
+  {k:'treynor', l:'Treynor', f:v=>pct(v), c:true},
+  {k:'mdd', l:'Máx. caída', f:v=>pct(v,0), c:true},
+  {k:'calmar', l:'Calmar', f:v=>num(v)},
+  {k:'cvar95', l:'CVaR 95% d', f:v=>pct(v), c:true},
+  {k:'sN', l:'<span class="gk">σ</span> GJR mañana', f:v=>pct(v), g:true},
+  {k:'ratio', l:'<span class="gk">σ</span> cond / hist', f:v=>num(v), g:true},
+  {k:'gm', l:'<span class="gk">γ</span> GJR', f:v=>num(v,2), g:true},
+  {k:'pers', l:'Persist.', f:v=>v==null?'—':F2.format(v), g:true},
+  {k:'sig', l:'Señal', f:v=>sigChip(v), g:true, nosort:true},
+];
+const GKEYS=new Set(COLS.filter(c=>c.g).map(c=>c.k));
+const sigChip=(v)=>v<0?'<span class="chip neg">stop-loss</span>':v>0?'<span class="chip pos">take-profit</span>':'<span class="muted">—</span>';
+function renderSignals(rows){
+  const el=document.getElementById('sg'), lb=document.getElementById('sg-lbl');
+  if (!U.G){ el.innerHTML='<p class="note">Estimando la volatilidad condicional de cada activo…</p>'; startGJR(U); return; }
+  const sl=[], tp=[];
+  for (const i of rows){ if (i>=NA) continue; const g=U.G[i]; if (!g||g.lastT!==T-1) continue; if (g.sig<0) sl.push(i); else if (g.sig>0) tp.push(i); }
+  const z=(i)=>{ const g=U.G[i]; return (g.rLast-g.m)/Math.sqrt(g.hT); };
+  sl.sort((a,b)=>z(a)-z(b)); tp.sort((a,b)=>z(b)-z(a));
+  const chip=(i)=>{ const g=U.G[i]; return `<button data-i="${i}" title="${esc(D.A[i].n)} · banda ${pct(g.lo,2)} a ${pct(g.hi,2)}">${esc(D.A[i].t)} <span class="${sgn(g.rLast)}">${g.rLast>=0?'+':''}${pct(g.rLast)}</span></button>`; };
+  const list=(a)=>a.length?a.slice(0,40).map(chip).join('')+(a.length>40?`<span class="muted">y ${a.length-40} más</span>`:''):'<span class="muted">Ninguno</span>';
+  lb.textContent=`${fdate(D.asof)}${D.live?' · en rueda':''} · ${sl.length} stop-loss · ${tp.length} take-profit`;
+  el.innerHTML=`<div class="sgrow"><span class="lbl neg">Stop-loss · retorno debajo del P5 condicional</span><div class="pick sgp">${list(sl)}</div></div>`+
+    `<div class="sgrow"><span class="lbl pos">Take-profit · retorno encima del P99 condicional</span><div class="pick sgp">${list(tp)}</div></div>`;
+}
+document.getElementById('sg').addEventListener('click',e=>{ const b=e.target.closest('button[data-i]'); if (b) openDetail(+b.dataset.i); });
+function critVal(i, crit, h){ if (crit==='score') return SCORE[i]; const m=M[h][i]; return m?m[crit]:null; }
+function filtered(){
+  const q=ST.q.trim().toLowerCase();
+  return D.A.map((a,i)=>i).filter(i=>{ const a=D.A[i];
+    if (ST.type && a.k!==ST.type) return false; if (ST.sec && a.s!==ST.sec) return false; if (a.il && !ST.il) return false;
+    if (q && !(a.t.toLowerCase().includes(q)||a.n.toLowerCase().includes(q)||(a.u||'').toLowerCase().includes(q))) return false; return true; });
+}
+function heatColor(v, lim){ if (v==null||!isFinite(v)) return 'transparent'; const x=Math.max(-1,Math.min(1,v/lim));
+  const c=x>=0?css('--pos'):css('--neg'); return `color-mix(in srgb, ${c} ${Math.round(Math.abs(x)*42)}%, transparent)`; }
+function spark(i,h){ const key=h+'_'+i; if (SPK[key]!==undefined) return SPK[key];
+  const p=D.P[i], H=Math.min(HZ[h][1],T-1), st=T-1-H, step=Math.max(1,Math.floor(H/48)); const pts=[]; let lo=Infinity,hi=-Infinity;
+  for (let t=st;t<T;t+=step){ const v=p[t]; if (v!=null){ pts.push([t,v]); lo=Math.min(lo,v); hi=Math.max(hi,v);} }
+  const lv=p[T-1]; if (lv!=null && (!pts.length||pts[pts.length-1][0]!==T-1)){ pts.push([T-1,lv]); lo=Math.min(lo,lv); hi=Math.max(hi,lv); }
+  if (pts.length<4) return SPK[key]='<span class="muted">—</span>';
+  const W=80,Hh=22, d=pts.map(([t,v])=>`${((t-st)/H*W).toFixed(1)},${(Hh-2-(v-lo)/((hi-lo)||1)*(Hh-4)).toFixed(1)}`).join(' ');
+  return SPK[key]=`<svg class="spk ${pts[pts.length-1][1]>=pts[0][1]?'up':'dn'}" viewBox="0 0 ${W} ${Hh}" width="${W}" height="${Hh}" aria-hidden="true"><polyline points="${d}"/></svg>`;
+}
+function scoreBar(v){ if (v==null||!isFinite(v)) return '<span class="sb"></span>'; const w=Math.min(1,Math.abs(v)/2)*50;
+  return `<span class="sb"><i class="${v>=0?'pos':'neg'}" style="left:${v>=0?50:50-w}%;width:${w}%"></i></span>`; }
+function attachRail(wrap, rail){
+  const track=rail.querySelector('.track'), thumb=rail.querySelector('.thumb'), btns=rail.querySelectorAll('.pan');
+  const upd=()=>{ const max=wrap.scrollWidth-wrap.clientWidth; rail.hidden=max<=2; wrap.classList.toggle('scrolled',wrap.scrollLeft>2); if (max<=2) return;
+    const tw=track.clientWidth, w=Math.max(36,tw*wrap.clientWidth/wrap.scrollWidth);
+    thumb.style.width=w+'px'; thumb.style.transform=`translateX(${(tw-w)*Math.min(1,wrap.scrollLeft/max)}px)`;
+    btns[0].disabled=wrap.scrollLeft<=1; btns[1].disabled=wrap.scrollLeft>=max-1; };
+  wrap.addEventListener('scroll',upd,{passive:true});
+  btns.forEach(b=>b.addEventListener('click',()=>wrap.scrollBy({left:+b.dataset.d*wrap.clientWidth*0.6,behavior:'smooth'})));
+  let grab=null;
+  const setFrom=(x)=>{ const r=track.getBoundingClientRect(), w=thumb.offsetWidth, max=wrap.scrollWidth-wrap.clientWidth;
+    wrap.scrollLeft=Math.min(1,Math.max(0,(x-r.left-grab)/Math.max(1,r.width-w)))*max; };
+  track.addEventListener('pointerdown',e=>{ const tr=thumb.getBoundingClientRect();
+    grab=(e.clientX>=tr.left&&e.clientX<=tr.right)?e.clientX-tr.left:thumb.offsetWidth/2;
+    try{ track.setPointerCapture(e.pointerId); }catch(_){} setFrom(e.clientX); e.preventDefault(); });
+  track.addEventListener('pointermove',e=>{ if (grab!=null) setFrom(e.clientX); });
+  ['pointerup','pointercancel','lostpointercapture'].forEach(ev=>track.addEventListener(ev,()=>{grab=null;}));
+  if (window.ResizeObserver) new ResizeObserver(upd).observe(wrap); else window.addEventListener('resize',upd);
+  return upd;
+}
+const railUpd=attachRail(document.getElementById('rk-wrap'),document.getElementById('rk-rail'));
+const CRIT_FMT={score:v=>num(v),sharpe:v=>num(v),sortino:v=>num(v),calmar:v=>num(v),psr:v=>pct(v,0),alpha:v=>pct(v),mu:v=>pct(v),ret:v=>pct(v),treynor:v=>pct(v)};
+function quant(a,q){ const s=a.slice().sort((x,y)=>x-y); return s.length?s[Math.min(s.length-1,Math.max(0,Math.floor(q*(s.length-1))))]:0; }
+function fcap(v){ if (!v||!isFinite(v)) return '—'; if (v>=1e12) return 'USD '+F2.format(v/1e12)+' billones'; if (v>=1e9) return 'USD '+F1.format(v/1e9)+' mil M'; return 'USD '+F0.format(v/1e6)+' M'; }
+const TM={size:'mc', col:'ret'};
+const TM_LIM={ret:[0.10,0.20,0.30,0.40,0.30,0.25], sharpe:[2,2,2,2,1.5,1.5], score:[1.5,1.5,1.5,1.5,1.5,1.5]};
+function tmVal(i,h){ if (TM.col==='score') return SCORE[i]; const m=M[h][i]; if (!m) return null; return TM.col==='ret'?(h>=3?m.cagr:m.ret):m.sharpe; }
+function worst(row,side){ let s=0,mx=0,mn=Infinity; for (const r of row){ s+=r.a; mx=Math.max(mx,r.a); mn=Math.min(mn,r.a); } const s2=s*s,w2=side*side; return Math.max(w2*mx/s2, s2/(w2*mn)); }
+function squarify(items, x, y, w, h){
+  const out=[], tot=items.reduce((s,it)=>s+it.v,0); if (!tot||w<=0||h<=0) return out;
+  const k=w*h/tot, rest=items.map(it=>({a:it.v*k,it})); let row=[];
+  const lay=()=>{ const s=row.reduce((a,b)=>a+b.a,0);
+    if (w>=h){ const cw=s/h; let cy=y; for (const r of row){ const rh=r.a/cw; out.push({it:r.it,x,y:cy,w:cw,h:rh}); cy+=rh; } x+=cw; w-=cw; }
+    else { const rh=s/w; let cx=x; for (const r of row){ const rw=r.a/rh; out.push({it:r.it,x:cx,y,w:rw,h:rh}); cx+=rw; } y+=rh; h-=rh; }
+    row=[]; };
+  while (rest.length){ const side=Math.min(w,h), c=rest[0];
+    if (!row.length || worst(row.concat([c]),side)<=worst(row,side)){ row.push(c); rest.shift(); } else lay(); }
+  if (row.length) lay(); return out;
+}
+let TM_ROWS=[];
+function renderTreemap(rows){
+  if (rows) TM_ROWS=rows; rows=TM_ROWS;
+  const el=document.getElementById('tm'), W=el.clientWidth, H=el.clientHeight; if (!W) return;
+  const h=ST.hz, lim=TM_LIM[TM.col][h];
+  const sz=(a)=>TM.size==='mc'?(a.mc||0):(U.mkt==='ced'?(a.v||0):(a.ops||0));
+  const items=rows.filter(i=>i<NA).map(i=>({i,v:sz(D.A[i])})).filter(x=>x.v>0);
+  const groups={}; items.forEach(x=>{ (groups[D.A[x.i].s]=groups[D.A[x.i].s]||[]).push(x); });
+  const secs=Object.entries(groups).map(([s,arr])=>({s,arr:arr.sort((a,b)=>b.v-a.v),v:arr.reduce((t,x)=>t+x.v,0)})).sort((a,b)=>b.v-a.v);
+  let html='';
+  for (const sr of squarify(secs,0,0,W,H)){
+    const g=sr.it, head=(sr.h>44&&sr.w>70)?15:0;
+    html+=`<div class="tm-sec" style="left:${sr.x}px;top:${sr.y}px;width:${sr.w}px;height:${sr.h}px">${head?`<span>${esc(g.s)}</span>`:''}</div>`;
+    for (const r of squarify(g.arr,sr.x+1,sr.y+1+head,sr.w-2,sr.h-2-head)){
+      const i=r.it.i, a=D.A[i], v=tmVal(i,h), x=v==null||!isFinite(v)?0:Math.max(-1,Math.min(1,v/lim));
+      const bg=v==null?'var(--tm0)':`color-mix(in srgb, ${x>=0?'var(--tm-pos)':'var(--tm-neg)'} ${Math.round(Math.abs(x)*100)}%, var(--tm0))`;
+      const fg=Math.abs(x)>0.42?'#ffffff':'var(--ink)';
+      const fs=Math.max(9,Math.min(24,r.w/4.4,r.h/2.4)), showT=r.w>=26&&r.h>=14, showV=showT&&r.h>=fs*2.5&&r.w>=42;
+      const vs=v==null?'—':(TM.col==='ret'?pct(v):num(v));
+      html+=`<div class="tm-box" data-i="${i}" style="left:${r.x}px;top:${r.y}px;width:${r.w}px;height:${r.h}px;background:${bg};color:${fg};font-size:${fs}px">${showT?`<b>${esc(a.t)}</b>`:''}${showV?`<small>${vs}</small>`:''}</div>`;
+    }
+  }
+  el.innerHTML=html+'<div class="tm-tip" id="tm-tip" hidden></div>';
+  const cl={ret:h>=3?`TACC ${HZ[h][0]}`:`Retorno ${HZ[h][0]}`, sharpe:`Sharpe ${HZ[h][0]}`, score:'Puntaje compuesto'}[TM.col];
+  const fl=(v)=>TM.col==='ret'?pct(v,0):num(v,1);
+  document.getElementById('tm-leg').innerHTML=`<span>${fl(-lim)}</span><span class="tm-grad"></span><span>+${fl(lim).replace('-','')}</span><span>· ${cl}</span>`;
+  const tot=items.reduce((s,x)=>s+x.v,0), miss=rows.filter(i=>i<NA).length-items.length;
+  document.getElementById('tm-lbl').textContent=`${items.length} ${U.noun} · ${TM.size==='mc'?'capitalización total '+fcap(tot):(U.mkt==='ced'?'operado ARS '+num(tot/1e6,0)+' M':num(tot,0)+' operaciones')}`;
+  document.getElementById('tm-note').textContent=`Cada caja es un${U.mkt==='ced'?' CEDEAR':'a acción'}; el área es proporcional a ${TM.size==='mc'?(U.mkt==='ced'?'la capitalización bursátil del subyacente (en ETF, los activos netos del fondo)':'la capitalización bursátil en dólares al CCL'):(U.mkt==='ced'?'el monto operado en BYMA en la última rueda':'la cantidad de operaciones en BYMA en la última rueda')} y se agrupa por sector. El color va del rojo al verde según ${cl.toLowerCase()}; los valores más allá de la escala se muestran con el color pleno.${miss>0?` ${miss} sin dato de tamaño no se muestran.`:''} Tocá una caja para ver su ficha.`;
+}
+(function(){
+  const el=document.getElementById('tm');
+  el.addEventListener('mousemove',e=>{ const b=e.target.closest('.tm-box'), tip=document.getElementById('tm-tip'); if (!tip) return;
+    if (!b){ tip.hidden=true; return; }
+    const i=+b.dataset.i, a=D.A[i], h=ST.hz, m=M[h][i];
+    tip.innerHTML=`<b>${esc(a.t)}</b><span>${esc(a.n)}</span><span class="muted">${esc(a.s)} · ${fcap(a.mc)}</span>`+
+      (m?`<span>${h>=3?'TACC':'Retorno'} ${HZ[h][0]}: <b class="${sgn(m.ret)}">${pct(h>=3?m.cagr:m.ret)}</b></span><span>Sharpe ${num(m.sharpe)} · <span class="gk">σ</span> ${pct(m.sd)}</span>`:'<span class="muted">Sin historia en el horizonte</span>')+
+      `<span>Puntaje ${num(SCORE[i])}</span>`;
+    tip.hidden=false; const r=el.getBoundingClientRect(), tw=tip.offsetWidth, th=tip.offsetHeight;
+    let x=e.clientX-r.left+14, y=e.clientY-r.top+14; if (x+tw>r.width) x=e.clientX-r.left-tw-10; if (y+th>r.height) y=e.clientY-r.top-th-10;
+    tip.style.left=Math.max(4,x)+'px'; tip.style.top=Math.max(4,y)+'px'; });
+  el.addEventListener('mouseleave',()=>{ const tip=document.getElementById('tm-tip'); if (tip) tip.hidden=true; });
+  el.addEventListener('click',e=>{ const b=e.target.closest('.tm-box'); if (b) openDetail(+b.dataset.i); });
+  document.getElementById('tm-size').onchange=e=>{ TM.size=e.target.value; renderTreemap(); };
+  document.getElementById('tm-col').onchange=e=>{ TM.col=e.target.value; renderTreemap(); };
+  let to=null; const ro=()=>{ clearTimeout(to); to=setTimeout(()=>renderTreemap(),120); };
+  if (window.ResizeObserver) new ResizeObserver(ro).observe(el); else window.addEventListener('resize',ro);
+})();
+let chS=null;
+function renderOverview(rows){
+  const h=ST.hz, H=HZ[h][1], lbl=HZ[h][0];
+  // dispersión
+  const pts=rows.map(i=>{ const m=M[h][i]; return m&&i!==BENCH?{x:m.sd*100,y:m.mu*100,i,t:D.A[i].t,e:D.A[i].k==='ETF'}:null; }).filter(Boolean);
+  const xs=pts.map(p=>p.x), ys=pts.map(p=>p.y);
+  const step=(v)=>v>200?50:v>80?20:10;
+  const xmax=Math.ceil(Math.max(10,quant(xs,0.97)*1.05)/step(quant(xs,0.97)))*step(quant(xs,0.97));
+  const yr=Math.max(10,quant(ys,0.98))-Math.min(-10,quant(ys,0.02)), ys_=step(yr);
+  const ylo=Math.floor(Math.min(-10,quant(ys,0.02))/ys_)*ys_, yhi=Math.ceil(Math.max(10,quant(ys,0.98))/ys_)*ys_;
+  const pad=0, out=pts.filter(p=>p.x>xmax||p.y<ylo-pad||p.y>yhi+pad).length;
+  const spy=BENCH<NA?M[h][BENCH]:metrics(BENCH,H), rf=spy?spy.rf*100:0;
+  const bpt=spy?[{x:spy.sd*100,y:spy.mu*100,t:U.bn,i:BENCH<NA?BENCH:null}]:[];
+  document.getElementById('sc-leg').innerHTML=`<span><i style="background:var(--c1)"></i>Acciones</span>${U.mkt==='ced'?'<span><i style="background:var(--c2)"></i>ETF</span>':''}<span><i style="background:var(--ink)"></i>${U.bn}</span><span><i style="background:var(--muted)"></i>Sharpe de ${U.bn}: los puntos por encima de la línea lo superan</span>`;
+  const line=spy?[{x:0,y:rf},{x:xmax,y:rf+spy.sharpe*xmax}]:[];
+  document.getElementById('sc-lbl').innerHTML=`E[R] vs. <span class="gk">σ</span> anual · ${lbl} · ${pts.length} ${U.noun}${out?` · ${out} fuera de escala`:''}`;
+  if (chS) chS.destroy();
+  chS=new Chart(document.getElementById('c-sc'),{type:'scatter',data:{datasets:[
+    {label:'Sharpe ref.',data:line,showLine:true,borderColor:css('--muted'),borderDash:[5,4],borderWidth:1.2,pointRadius:0},
+    {label:'Acciones',data:pts.filter(p=>!p.e),backgroundColor:alpha(css('--c1'),0.55),borderColor:alpha(css('--c1'),0.9),pointRadius:3.2,pointHoverRadius:6},
+    {label:'ETF',data:pts.filter(p=>p.e),backgroundColor:alpha(css('--c2'),0.6),borderColor:css('--c2'),pointRadius:3.6,pointHoverRadius:6},
+    {label:U.bn,data:bpt,backgroundColor:css('--ink'),borderColor:css('--ink'),pointRadius:6,pointStyle:'rectRot'}]},
+    options:{responsive:true,maintainAspectRatio:false,
+      onClick:(e,els)=>{ const el=els.find(x=>x.datasetIndex>0); if (el){ const p=chS.data.datasets[el.datasetIndex].data[el.index]; if (p&&p.i!=null) openDetail(p.i); } },
+      onHover:(e,els)=>{ e.native&&e.native.target&&(e.native.target.style.cursor=els.some(x=>x.datasetIndex>0)?'pointer':'default'); },
+      plugins:{legend:{display:false},tooltip:{filter:c=>c.datasetIndex>0,callbacks:{label:c=>`${c.raw.t}: E[R] ${num(c.parsed.y,1)}% · σ ${num(c.parsed.x,1)}%`}}},
+      scales:{x:Object.assign(axisOpts(),{min:0,max:xmax,ticks:Object.assign(axisOpts().ticks,{callback:v=>F0.format(v)}),title:{display:true,text:'σ anual (%)',color:css('--muted')}}),
+              y:Object.assign(axisOpts(),{min:ylo,max:yhi,ticks:Object.assign(axisOpts().ticks,{callback:v=>F0.format(v)}),title:{display:true,text:'E[R] anual (%)',color:css('--muted')}})}}});
+  // líderes
+  const crit=ST.crit, cname=document.querySelector('#crit option:checked').textContent;
+  const top=rows.map(i=>[i,critVal(i,crit,h)]).filter(x=>x[1]!=null&&isFinite(x[1])).sort((a,b)=>b[1]-a[1]).slice(0,10);
+  const mx=Math.max(1e-9,...top.map(x=>x[1]));
+  document.getElementById('ld-t').textContent='Los 10 primeros';
+  document.getElementById('ld-l').textContent=crit==='score'?'Puntaje compuesto 1A · 3A · 5A':`${cname} · ${lbl}`;
+  document.getElementById('leaders').innerHTML=top.map(([i,v],k)=>`<button class="ld" data-i="${i}" title="${esc(D.A[i].n)}"><span class="r">${k+1}</span><span class="t">${esc(D.A[i].t)}</span><span class="b"><i style="width:${Math.max(0,v)/mx*100}%"></i></span><span class="v ${sgn(v)}">${(CRIT_FMT[crit]||num)(v)}</span></button>`).join('')
+    || '<p class="note">Sin datos para este filtro.</p>';
+  // resumen
+  const ms=rows.filter(i=>i!==BENCH).map(i=>M[h][i]).filter(Boolean);
+  const sh=ms.map(m=>m.sharpe), rt=ms.map(m=>h>=3?m.cagr:m.ret);
+  const beat=spy?ms.filter(m=>m.sharpe>spy.sharpe).length/Math.max(1,ms.length):null;
+  document.getElementById('rk-minis').innerHTML=
+    `<div><span class="lbl">Ret. mediano</span><b class="${sgn(quant(rt,0.5))}">${pct(quant(rt,0.5))}</b></div>`+
+    `<div><span class="lbl">Sharpe mediano</span><b>${num(quant(sh,0.5))}</b></div>`+
+    `<div><span class="lbl">Superan a ${U.bn} (Sharpe)</span><b>${pct(beat,0)}</b></div>`;
+}
+document.getElementById('leaders').addEventListener('click',e=>{ const b=e.target.closest('.ld'); if (b) openDetail(+b.dataset.i); });
+function renderRanking(){
+  const h=ST.hz, rows=filtered(); const key=ST.sortKey||ST.crit;
+  const val=(i)=>{ if (ST.mode==='heat' && key.startsWith('h')) { const m=M[+key.slice(1)][i]; return m?m.sharpe:null; }
+    if (GKEYS.has(key)){ const g=U.G&&U.G[i]; return g?g[key]:null; }
+    if (key==='score') return SCORE[i]; if (key==='t') return D.A[i].t; if (key==='v') return U.mkt==='ced'?D.A[i].v:D.A[i].ops; if (key==='mc') return D.A[i].mc; const m=M[h][i]; if (!m) return null; return key==='ret'?(h>=3?m.cagr:m.ret):m[key]; };
+  rows.sort((a,b)=>{ const x=val(a), y=val(b); if (x==null&&y==null) return 0; if (x==null) return 1; if (y==null) return -1;
+    return typeof x==='string'? ST.sortDir*x.localeCompare(y) : -ST.sortDir*(y-x); });
+  const th=(k,l,cls='n')=>`<th class="${cls}" data-k="${k}" ${k===key?`aria-sort="${ST.sortDir<0?'descending':'ascending'}"`:''}>${l}</th>`;
+  let head=`<thead><tr>${th('t','# · '+U.col,'')}<th style="cursor:default">Tendencia ${HZ[h][0]}</th><th style="cursor:default">Empresa / fondo</th><th style="cursor:default">Sector</th>${th('score','Puntaje')}`;
+  if (ST.mode==='metrics') head+=COLS.map(c=>c.nosort?`<th class="n" style="cursor:default">${c.l}</th>`:th(c.k,c.l)).join('');
+  else head+=HZ.map(([l],j)=>th('h'+j,'Sharpe '+l)).join('')+HZ.map(([l],j)=>`<th class="n" style="cursor:default">Ret. ${l}</th>`).join('');
+  head+=`${th('mc','Capitalización USD')}${th('v',U.mkt==='ced'?'Monto hoy ARS M':'Operaciones última rueda')}<th class="n" style="cursor:default">Precio ARS</th>${U.mkt==='ced'?'<th style="cursor:default">Ratio</th>':''}</tr></thead>`;
+  const body=rows.map((i,r)=>{ const a=D.A[i], m=M[h][i];
+    let tds='';
+    if (ST.mode==='metrics') tds=COLS.map(c=>{ let v=c.g?(U.G&&U.G[i]?U.G[i][c.k]:null):m?(c.k==='ret'?(h>=3?m.cagr:m.ret):m[c.k]):null; return `<td class="n ${c.c?sgn(v):''}">${c.k==='ci'?c.f(null,m):c.f(v)}</td>`; }).join('');
+    else tds=HZ.map((_,j)=>{ const mm=M[j][i]; const v=mm?mm.sharpe:null; return `<td class="heat" style="background:${heatColor(v,2)}">${num(v)}</td>`; }).join('')
+      +HZ.map(([,H],j)=>{ const mm=M[j][i]; const v=mm?(j>=3?mm.cagr:mm.ret):null; return `<td class="heat" style="background:${heatColor(v,0.6)}">${pct(v,0)}</td>`; }).join('');
+    return `<tr data-i="${i}"><td class="tk"><span class="rk">${r+1}</span>${esc(a.t)} ${a.k==='ETF'?'<span class="chip etf">ETF</span>':''}${a.il?' <span class="chip warn" title="Más de 30% de ruedas sin cambio de precio en el último año">baja liq.</span>':''}</td><td class="sp">${spark(i,h)}</td><td class="nm" title="${esc(a.n)}">${esc(a.n)}</td><td class="sec" title="${esc(a.i||a.s)}">${esc(a.s)}</td>`+
+      `<td class="n ${sgn(SCORE[i])}">${scoreBar(SCORE[i])}${num(SCORE[i])}</td>${tds}<td class="n">${fcap(a.mc)}</td><td class="n">${U.mkt==='ced'?(a.v?num(a.v/1e6,1):'—'):(a.ops?num(a.ops,0):'—')}</td><td class="n">${a.px?num(a.px,2):'—'}</td>${U.mkt==='ced'?`<td class="mono">${a.r?(a.r>=1?a.r+':1':'1:'+Math.round(1/a.r)):'—'}${a.r&&!a.rok?' <span class="chip warn">ratio?</span>':''}</td>`:''}</tr>`; }).join('');
+  document.getElementById('rk').innerHTML=head+'<tbody>'+body+'</tbody>';
+  railUpd(); renderOverview(rows); renderTreemap(rows); renderSignals(rows);
+  const nv=rows.filter(i=>M[h][i]).length;
+  document.getElementById('rk-status').textContent=`${rows.length} ${U.noun} listados · ${nv} con historia completa en ${HZ[h][0]} · ventana ${fdate(D.dates[Math.max(0,T-1-HZ[h][1])])} → ${fdate(D.asof)}`;
+}
+function seg(el, items, cur, on){ el.innerHTML=items.map(([v,l])=>`<button data-v="${v}" aria-pressed="${v==cur}">${l}</button>`).join('');
+  el.onclick=e=>{ const b=e.target.closest('button'); if(!b) return; el.querySelectorAll('button').forEach(x=>x.setAttribute('aria-pressed',x===b)); on(b.dataset.v); }; }
+seg(document.getElementById('hz'), HZ.map(([l],j)=>[j,l]), ST.hz, v=>{ST.hz=+v; renderRanking();});
+document.getElementById('crit').onchange=e=>{ST.crit=e.target.value; ST.sortKey=null; ST.sortDir=-1; renderRanking();};
+document.getElementById('ftype').onchange=e=>{ST.type=e.target.value; renderRanking();};
+document.getElementById('fil').onchange=e=>{ST.il=e.target.value==='1'; setMarket(U);};
+function setMarket(u){
+  useU(u);
+  const secs=[...new Set(D.A.map(a=>a.s))].sort(); if (!secs.includes(ST.sec)) ST.sec='';
+  document.getElementById('fsec').innerHTML='<option value="">Todos</option>'+secs.map(s=>`<option${s===ST.sec?' selected':''}>${esc(s)}</option>`).join('');
+  document.getElementById('f-type').hidden=u.mkt!=='ced'; document.getElementById('f-il').hidden=u.mkt==='ced';
+  document.getElementById('tm-size-v').textContent=u.mkt==='ced'?'Monto operado en BYMA (última rueda)':'Operaciones en BYMA (última rueda)'; if (u.mkt!=='ced') ST.type=''; document.getElementById('ftype').value=ST.type;
+  if (u.mkt==='ced'){
+    document.getElementById('mk-t').textContent=`CEDEARs · ${NA} especies`;
+    document.getElementById('mk-n').textContent='Métricas sobre el subyacente en dólares, ajustado por dividendos y splits. Referencia de mercado: SPY. Capitalización del subyacente (ETF: activos netos del fondo).'+(D.live?` El último punto (${fdate(D.asof)}) es el precio en rueda y se reemplaza por el cierre oficial a la noche.`:'');
+  } else {
+    document.getElementById('mk-t').textContent=`Acciones argentinas · panel general · ${NA} especies`;
+    document.getElementById('mk-n').textContent=`Precios locales ajustados por dividendos, pasados a dólares con el CCL implícito en GGAL, YPF, PAMP y BMA (hoy ${num(D.ccl,2)}). Referencia de mercado: Merval en dólares CCL.${D.live?` El último punto (${fdate(D.asof)}) es el precio en rueda y se reemplaza por el cierre oficial a la noche.`:''} ${ST.il?'':` Se ocultan ${D.A.filter(a=>a.il).length} especies de baja liquidez (más de 30% de ruedas sin cambio de precio en el último año), cuyas series no reflejan precios de mercado confiables.`} En la pestaña Cartera óptima elegí el mercado Acciones argentinas para armar carteras con estas especies.`;
+  }
+  renderRanking();
+}
+document.getElementById('fsec').onchange=e=>{ST.sec=e.target.value; renderRanking();};
+document.getElementById('q').oninput=e=>{ST.q=e.target.value; renderRanking();};
+document.getElementById('mode').onclick=e=>{ const b=e.target.closest('button'); if(!b) return; ST.mode=b.dataset.m; ST.sortKey=null;
+  document.querySelectorAll('#mode button').forEach(x=>x.setAttribute('aria-pressed',x===b)); renderRanking(); };
+document.getElementById('rk').onclick=e=>{
+  const th=e.target.closest('th[data-k]'); if (th && th.dataset.k!=='rank'){ const k=th.dataset.k; if (ST.sortKey===k||(!ST.sortKey&&ST.crit===k)) ST.sortDir*=-1; else {ST.sortKey=k; ST.sortDir=k==='t'?1:-1;} renderRanking(); return; }
+  const tr=e.target.closest('tr[data-i]'); if (tr) openDetail(+tr.dataset.i);
+};
+
+/* ==================== DETALLE ==================== */
+let chD=null, DI=0, DH=4;
+function openDetail(i){ DI=i; const a=D.A[i];
+  document.getElementById('d-t').textContent=`${a.t} · ${a.n}`;
+  document.getElementById('d-sub').textContent=U.mkt==='ced'?`${a.k} · ${a.s}${a.i?' · '+a.i:''} · subyacente ${a.u}${a.r?' · ratio '+(a.r>=1?a.r+':1':'1:'+Math.round(1/a.r)):''}${a.mc?' · cap. '+fcap(a.mc):''}`
+    :`Acción argentina · ${a.s}${a.i?' · '+a.i:''}${a.mc?' · cap. '+fcap(a.mc):''} · serie en USD al CCL`;
+  document.getElementById('d-bn').textContent=U.bn;
+  seg(document.getElementById('d-hz'), HZ.map(([l],j)=>[j,l]), DH, v=>{DH=+v; drawDetail();});
+  drawDetail();
+  const rows=HZ.map(([l,H],j)=>{ const m=M[j][i]; if(!m) return `<tr><td class="mono">${l}</td><td colspan="10" class="muted">Historia insuficiente</td></tr>`;
+    return `<tr><td class="mono">${l}</td><td class="n ${sgn(m.ret)}">${pct(j>=3?m.cagr:m.ret)}</td><td class="n ${sgn(m.mu)}">${pct(m.mu)}</td><td class="n">${pct(m.lo,0)} a ${pct(m.hi,0)}</td><td class="n">${num(m.tstat)}</td><td class="n">${pct(m.sd)}</td><td class="n ${sgn(m.sharpe)}">${num(m.sharpe)}</td><td class="n">${pct(m.psr,0)}</td><td class="n">${num(m.beta)}</td><td class="n ${sgn(m.alpha)}">${pct(m.alpha)}</td><td class="n neg">${pct(m.mdd,0)}</td></tr>`; }).join('');
+  document.getElementById('d-t2').innerHTML=`<thead><tr><th style="cursor:default">Horiz.</th><th class="n">Ret.</th><th class="n">E[R]</th><th class="n">IC 95%</th><th class="n">t de E[R]</th><th class="n"><span class="gk">σ</span></th><th class="n">Sharpe</th><th class="n">PSR</th><th class="n"><span class="gk">β</span></th><th class="n"><span class="gk">α</span></th><th class="n">Máx. caída</th></tr></thead><tbody>${rows}</tbody>`;
+  document.querySelectorAll('#d-t2 tbody tr').forEach(r=>r.style.cursor='default');
+  const dlg=document.getElementById('dlg'); if (!dlg.open) dlg.showModal();
+}
+function drawDetail(){ const i=DI, H=HZ[DH][1], m=M[DH][i];
+  const k=(l,v,s,c='')=>`<div class="kpi"><span class="lbl">${l}</span><span class="v ${c}">${v}</span>${s?`<span class="s">${s}</span>`:''}</div>`;
+  document.getElementById('d-kpis').innerHTML = m? k('E[R] anual',pct(m.mu),`IC 95%: ${pct(m.lo,0)} a ${pct(m.hi,0)}`,sgn(m.mu))+k(DH>=3?'TACC':'Retorno',pct(DH>=3?m.cagr:m.ret),'',sgn(m.ret))+k('Volatilidad',pct(m.sd))+k('Sharpe',num(m.sharpe),`PSR ${pct(m.psr,0)}`)+k('<span class="gk">β / α</span>',`${num(m.beta)} / ${pct(m.alpha)}`,`R² ${pct(m.r2,0)}`)+k('Máx. caída',pct(m.mdd,0),`CVaR diario ${pct(m.cvar95)}`,'neg')
+    : '<div class="kpi"><span class="s">Sin historia suficiente en este horizonte.</span></div>';
+  const gj=U.G&&U.G[i];
+  if (gj) document.getElementById('d-kpis').insertAdjacentHTML('beforeend', k('<span class="gk">σ</span> GJR mañana',pct(gj.sN),`hist. ${pct(gj.sH)} · <span class="gk">γ</span> ${num(gj.gm)} · persist. ${num(gj.pers,2)}`)+
+    k('Señal último dato', gj.sig<0?'Stop-loss':gj.sig>0?'Take-profit':'Sin señal', `ret. ${pct(gj.rLast,2)} · banda ${pct(gj.lo,1)} a ${pct(gj.hi,1)}`, gj.sig<0?'neg':gj.sig>0?'pos':''));
+  const start=Math.max(1,T-H), lab=[fdate(D.dates[start-1])], a=[100], b=[100]; let wa=100, wb=100, started=false;
+  for (let t=start;t<T;t++){ const x=R[i][t], y=R[BENCH][t]; if (isFinite(x)) started=true; if(!started) continue;
+    wa*=1+(isFinite(x)?x:0); wb*=1+(isFinite(y)?y:0); lab.push(fdate(D.dates[t])); a.push(wa); b.push(wb); }
+  chD=lineChart('c-d', chD, lab, [{label:D.A[i].t,data:a,color:css('--c1')},{label:U.bn,data:b,color:css('--c2'),dash:[4,3]}], {});
+}
+document.getElementById('d-x').onclick=()=>document.getElementById('dlg').close();
+document.getElementById('dlg').addEventListener('click',e=>{ if (e.target.id==='dlg') e.target.close(); });
+
+/* ==================== GRÁFICOS ==================== */
+Chart.defaults.font.family=getComputedStyle(document.body).fontFamily; Chart.defaults.animation=false;
+function axisOpts(){ return {grid:{color:css('--soft')}, ticks:{color:css('--muted'),maxRotation:0,autoSkipPadding:18}, border:{color:css('--line')}}; }
+function lineChart(id, prev, labels, sets, opt){
+  if (prev) prev.destroy();
+  return new Chart(document.getElementById(id), {type:'line', data:{labels, datasets:sets.map(s=>({label:s.label,data:s.data,borderColor:s.color,backgroundColor:s.fill||s.color,
+    borderWidth:s.w||1.8,pointRadius:0,borderDash:s.dash||[],fill:s.fillTo!==undefined?s.fillTo:false,tension:0}))},
+    options:{responsive:true,maintainAspectRatio:false,interaction:{mode:'index',intersect:false},
+      plugins:{legend:{display:false},tooltip:{callbacks:{label:c=>`${c.dataset.label}: ${num(c.parsed.y,1)}`}}},
+      scales:{x:axisOpts(), y:Object.assign(axisOpts(),{type:opt.log?'logarithmic':'linear'})}}});
+}
+
+/* ==================== CARTERA ==================== */
+const pSel=document.getElementById('p-crit'); pSel.innerHTML=document.getElementById('crit').innerHTML;
+seg(document.getElementById('p-win'), [['1A','1A'],['3A','3A'],['5A','5A']], PC.wk, v=>{PC.wk=v; renderPortfolio();});
+document.getElementById('p-mkt').value=PC.mkt;
+document.getElementById('p-mkt').addEventListener('change',e=>{ PC.mkt=e.target.value; PC.manual=[]; CUR=null; BT_DONE=false;
+  ['b-kpis','mc-t'].forEach(id=>document.getElementById(id).innerHTML=''); if (chB){chB.destroy();chB=null;} if (chM){chM.destroy();chM=null;}
+  renderPortfolio(); });
+const bind=(id,key,cast=(v)=>v,ev='change')=>{ const el=document.getElementById(id); el.value=key==='cap'?Math.round(PC.cap*100):PC[key]; el.addEventListener(ev,()=>{ PC[key]=cast(el.value); renderPortfolio(); }); };
+bind('p-univ','univ'); bind('p-n','n',v=>Math.max(2,Math.min(60,+v||20))); bind('p-crit','crit'); bind('p-type','type'); bind('p-vol','vol',v=>+v||0);
+bind('p-mu','mu'); bind('p-mrp','mrp',v=>+v); bind('p-cov','cov'); bind('p-meth','meth'); bind('p-lam','lam',v=>Math.max(0.1,+v||4));
+bind('p-cap','cap',v=>+v/100,'input'); bind('p-cap-ars','ars',v=>+v||0); bind('p-ccl','ccl',v=>+v||D.ccl);
+document.getElementById('dl-tk').innerHTML=D.A.map(a=>`<option value="${esc(a.t)}">${esc(a.n)}</option>`).join('');
+document.getElementById('p-add').addEventListener('keydown',e=>{ if (e.key!=='Enter') return; const t=e.target.value.trim().toUpperCase(); if (byT[t]!=null && !PC.manual.includes(t)){ PC.manual.push(t); e.target.value=''; renderPortfolio(); } });
+document.getElementById('p-add').addEventListener('change',e=>{ const t=e.target.value.trim().toUpperCase(); if (byT[t]!=null && !PC.manual.includes(t)){ PC.manual.push(t); e.target.value=''; renderPortfolio(); } });
+document.getElementById('p-pick').onclick=e=>{ const b=e.target.closest('button'); if(!b) return; PC.manual=PC.manual.filter(t=>t!==b.dataset.t); renderPortfolio(); };
+
+// universo elegible al día `end`
+function selectUniverse(end, cfg, scoreFn){
+  const H=cfg.win; let cand;
+  if (cfg.univ==='manual' && end===T-1) cand=cfg.manual.map(t=>byT[t]).filter(i=>i!=null);
+  else cand=D.A.map((a,i)=>i).filter(i=>{ const a=D.A[i]; if (a.il) return false; if (cfg.type && a.k!==cfg.type) return false;
+    if (end===T-1 && cfg.vol>0 && (a.v||0)<cfg.vol*1e6) return false; return true; });
+  // historia completa en la ventana
+  cand=cand.filter(i=>{ const r=R[i]; let c=0; for (let t=end-H+1;t<=end;t++) if (isFinite(r[t])) c++; return c>=H*0.97; });
+  if (cfg.univ==='manual' && end===T-1) return cand;
+  const sc=scoreFn(cand); const order=cand.map((i,j)=>[i,sc[j]]).filter(x=>x[1]!=null&&isFinite(x[1])).sort((a,b)=>b[1]-a[1]);
+  return order.slice(0,cfg.n).map(x=>x[0]);
+}
+function scoreAt(end, crit, H){
+  if (crit==='score'){ if (end===T-1) return (c)=>c.map(i=>SCORE[i]);
+    return (c)=>{ const mats=SCORE_H.map(([h])=>{ const HH=HZ[h][1]===T-1?Math.min(end-1,1255):HZ[h][1]; return c.map(i=>metrics(i,Math.min(HH,end-1),end)); }); return compositeFrom(mats); }; }
+  return (c)=>c.map(i=>{ const m=end===T-1&&HZ.find(x=>x[1]===H)?M[HZ.findIndex(x=>x[1]===H)][i]:metrics(i,H,end); return m?m[crit]:null; });
+}
+let chF=null, CUR=null;
+function renderPortfolio(){
+  useU(mktU()); PC.win=winOf(); save();
+  document.getElementById('p-type-f').hidden=U.mkt!=='ced'; if (U.mkt!=='ced') PC.type='';
+  document.getElementById('dl-tk').innerHTML=D.A.map(a=>`<option value="${esc(a.t)}">${esc(a.n)}</option>`).join('');
+  document.getElementById('p-cap-v').textContent=Math.round(PC.cap*100)+'%';
+  document.getElementById('p-lam-f').hidden=PC.meth!=='mv';
+  document.getElementById('p-man-f').hidden=PC.univ!=='manual'; document.getElementById('p-pick').hidden=PC.univ!=='manual';
+  if (PC.univ==='manual' && !PC.manual.length){ PC.manual=selectUniverse(T-1,Object.assign({},PC,{univ:'top',n:10}),scoreAt(T-1,PC.crit,PC.win)).map(i=>D.A[i].t); }
+  document.getElementById('p-pick').innerHTML=PC.manual.map(t=>`<button data-t="${esc(t)}" title="Quitar">${esc(t)} ×</button>`).join('');
+  const idx=selectUniverse(T-1,PC,scoreAt(T-1,PC.crit,PC.win));
+  if (idx.length<2){ document.getElementById('p-kpis').innerHTML='<div class="kpi"><span class="s">Hacen falta al menos 2 activos con historia completa en la ventana elegida. Bajá el volumen mínimo o acortá la ventana.</span></div>'; return; }
+  const P=buildPortfolio(idx,T-1,PC); CUR={idx,P,u:U};
+  const {w,mu,S,rf}=P, st=stats(w,mu,S,rf);
+  const Sw=mv(S,w), rc=Array.from(w,(x,j)=>x*Sw[j]/(st.s*st.s));
+  const betas=idx.map(i=>{ const m=metrics(i,PC.win,T-1,0.5); return m?m.beta:1; }); const bp=dot(w,betas);
+  const neff=1/dot(w,w), dr=dot(w,Float64Array.from(S,(r,j)=>Math.sqrt(r[j])))/st.s;
+  // VaR paramétrico anual e histórico diario
+  const cvar=-cvarOf(w,P.X);
+  const H=hmmAt(P.start,P.end), RG=['Bajista','Lateral','Alcista'], rk=H?H.last.indexOf(Math.max(...H.last)):-1;
+  const k=(l,v,s,c='')=>`<div class="kpi"><span class="lbl">${l}</span><span class="v ${c}">${v}</span>${s?`<span class="s">${s}</span>`:''}</div>`;
+  const muNote={bs:`Bayes-Stein, contracción ${pct(P.shrinkW,0)}`,hmm:'Regímenes HMM, 3 estados',hist:'Media histórica',capm:`CAPM, prima ${num(PC.mrp,1)}%`}[PC.mu];
+  document.getElementById('p-kpis').innerHTML=
+    k('E[R] cartera',pct(st.m),muNote,sgn(st.m))+k('Volatilidad',pct(st.s),PC.cov==='lw'?`Ledoit-Wolf δ = ${num(P.delta,2)}`:PC.cov==='gjr'?`σ GJR × correlación LW (δ = ${num(P.delta,2)})`:'Covarianza muestral')+
+    k('Sharpe ex ante',num(st.sh),`r_f ${pct(rf)}`)+k(`<span class="gk">β</span> vs ${U.bn}`,num(bp))+k('N efectivo',num(neff,1),`${idx.length} candidatos · ${Array.from(w).filter(x=>x>0.005).length} con peso`)+
+    k('Ratio de diversificación',num(dr))+k('CVaR 95% diario',pct(cvar),P.fits?'escenarios filtrados por GJR':'histórico, ventana','neg')+
+    (H?k('Régimen hoy',RG[rk],`${pct(H.last[rk],0)} de probabilidad · ${U.bn}`):'');
+  // tabla de pesos
+  const usd=PC.ars/PC.ccl;
+  const rows=idx.map((i,j)=>({i,j,w:w[j]})).filter(x=>x.w>0.0005).sort((a,b)=>b.w-a.w);
+  const maxw=Math.max(...rows.map(x=>x.w));
+  document.getElementById('p-w').innerHTML=`<thead><tr><th>${U.col}</th><th class="n">Peso</th><th style="min-width:80px"></th><th class="n">Contrib. riesgo</th><th class="n"><span class="gk">μ</span> estimada</th><th class="n"><span class="gk">σ</span></th><th class="n">Monto ARS</th><th class="n">Precio ARS</th><th class="n">Cantidad</th></tr></thead><tbody>`+
+    rows.map(x=>{ const a=D.A[x.i], amt=PC.ars*x.w, q=a.px?Math.floor(amt/a.px):null;
+      return `<tr data-i="${x.i}"><td class="tk">${esc(a.t)}</td><td class="n">${pct(x.w)}</td><td class="bar-cell"><div class="wbar" style="width:${x.w/maxw*100}%"></div></td><td class="n">${pct(rc[x.j])}</td><td class="n ${sgn(mu[x.j])}">${pct(mu[x.j])}</td><td class="n">${pct(Math.sqrt(S[x.j][x.j]))}</td><td class="n">${num(amt,0)}</td><td class="n">${a.px?num(a.px,2):'—'}</td><td class="n">${q==null?'—':num(q,0)}</td></tr>`; }).join('')+
+    `</tbody><tfoot><tr><td class="muted" colspan="6">Total · equivale a USD ${num(usd,0)} al CCL ${num(PC.ccl,2)}</td><td class="n">${num(PC.ars,0)}</td><td></td><td></td></tr></tfoot>`;
+  document.querySelector('#p-w').onclick=e=>{ const tr=e.target.closest('tr[data-i]'); if (tr) openDetail(+tr.dataset.i); };
+  drawFrontier(P, idx, st); drawCorr(P, idx, w); drawHMM(H, P); drawGJR(idx, P, w);
+}
+function drawFrontier(P, idx, st){
+  const {mu,S,rf,minv}=P; const ex=Float64Array.from(mu,v=>v-rf); const pts=[]; let w0=minv;
+  const mvs=stats(minv,mu,S,rf); pts.push({x:mvs.s*100,y:mvs.m*100});
+  for (let k=0;k<26;k++){ const lam=Math.exp(Math.log(3000)-k*(Math.log(3000)-Math.log(0.15))/25); w0=solveMV(ex,S,lam,PC.cap,w0); const s=stats(w0,mu,S,rf); pts.push({x:s.s*100,y:s.m*100}); }
+  pts.sort((a,b)=>a.x-b.x); const fr=[]; let bestY=-1e9; for (const p of pts) if (p.y>=bestY-1e-6){ fr.push(p); bestY=Math.max(bestY,p.y); }
+  let tan=fr[0], best=-1e9; for (const p of fr){ const sh=(p.y-rf*100)/p.x; if (sh>best){best=sh;tan=p;} }
+  const maxX=Math.max(...fr.map(p=>p.x), ...idx.map((_,j)=>Math.sqrt(S[j][j])*100))*1.05;
+  const cml=[{x:0,y:rf*100},{x:maxX,y:rf*100+best*maxX}];
+  const assets=idx.map((i,j)=>({x:Math.sqrt(S[j][j])*100,y:mu[j]*100,t:D.A[i].t}));
+  if (chF) chF.destroy();
+  chF=new Chart(document.getElementById('c-front'),{type:'scatter',data:{datasets:[
+    {label:'Frontera',data:fr,showLine:true,borderColor:css('--c1'),backgroundColor:css('--c1'),pointRadius:0,borderWidth:2.2},
+    {label:'LMC',data:cml,showLine:true,borderColor:css('--c2'),borderDash:[5,4],pointRadius:0,borderWidth:1.5},
+    {label:'Activos',data:assets,borderColor:css('--c3'),backgroundColor:css('--c3'),pointRadius:3.5},
+    {label:'Cartera',data:[{x:st.s*100,y:st.m*100}],borderColor:css('--ink'),backgroundColor:css('--ink'),pointRadius:7,pointStyle:'rectRot'}]},
+    options:{responsive:true,maintainAspectRatio:false,plugins:{legend:{display:false},tooltip:{callbacks:{label:c=>`${c.raw.t||c.dataset.label}: σ ${num(c.parsed.x,1)}% · μ ${num(c.parsed.y,1)}%`}}},
+      scales:{x:Object.assign(axisOpts(),{min:0,max:maxX,title:{display:true,text:'σ anual (%)',color:css('--muted')}}),y:Object.assign(axisOpts(),{title:{display:true,text:'E[R] anual (%)',color:css('--muted')}})}}});
+}
+function drawCorr(P, idx, w){
+  const order=idx.map((i,j)=>j).filter(j=>w[j]>0.0005).sort((a,b)=>w[b]-w[a]); const n=order.length;
+  const cv=document.getElementById('c-corr'); const cell=Math.max(16,Math.min(30,Math.floor(560/Math.max(n,1)))), pad=60;
+  const dpr=window.devicePixelRatio||1, W=pad+cell*n+70, Hh=pad+cell*n+8;
+  cv.width=W*dpr; cv.height=Hh*dpr; cv.style.width=W+'px'; cv.style.height=Hh+'px';
+  const g=cv.getContext('2d'); g.scale(dpr,dpr); g.clearRect(0,0,W,Hh);
+  const pos=css('--c1'), neg=css('--c2'), ink=css('--muted'); g.font='600 10px '+css('--f-mono');
+  const S=P.S;
+  order.forEach((a,r)=>{ g.fillStyle=ink; g.textAlign='right'; g.textBaseline='middle'; g.fillText(D.A[idx[a]].t,pad-6,pad+r*cell+cell/2);
+    g.save(); g.translate(pad+r*cell+cell/2,pad-6); g.rotate(-Math.PI/3); g.textAlign='left'; g.fillText(D.A[idx[a]].t,0,0); g.restore();
+    order.forEach((b,c)=>{ const rho=S[a][b]/Math.sqrt(S[a][a]*S[b][b]); g.globalAlpha=Math.min(1,Math.abs(rho)); g.fillStyle=rho>=0?pos:neg;
+      g.fillRect(pad+c*cell+1,pad+r*cell+1,cell-2,cell-2); g.globalAlpha=1;
+      if (cell>=24){ g.fillStyle=Math.abs(rho)>0.55?css('--panel'):css('--ink'); g.textAlign='center'; g.font='9px '+css('--f-mono'); g.fillText(num(rho,1),pad+c*cell+cell/2,pad+r*cell+cell/2); g.font='600 10px '+css('--f-mono'); } }); });
+  // escala
+  const x0=pad+cell*n+14; [[1,'+1'],[0.5,'+0,5'],[0,'0'],[-0.5,'−0,5']].forEach(([v,l],k)=>{ g.globalAlpha=Math.abs(v)||0.05; g.fillStyle=v>=0?pos:neg; g.fillRect(x0,pad+k*18,14,14); g.globalAlpha=1; g.fillStyle=ink; g.textAlign='left'; g.fillText(l,x0+20,pad+k*18+7); });
+}
+
+let chH=null;
+function drawHMM(H, P){
+  const t=document.getElementById('hmm-t'), RG=['Bajista','Lateral','Alcista'], CL=['--neg','--muted','--pos'];
+  document.getElementById('hmm-lbl').textContent=`${U.bn} · ventana ${PC.wk} · ${fdate(D.dates[P.start])} → ${fdate(D.dates[P.end])}`;
+  if (!H){ t.innerHTML=''; document.getElementById('hmm-n').textContent='Historia insuficiente para estimar los regímenes.'; if (chH){chH.destroy();chH=null;} return; }
+  t.innerHTML='<thead><tr><th style="cursor:default">Régimen</th><th class="n">E[R] anual</th><th class="n"><span class="gk">σ</span> anual</th><th class="n">Prob. hoy</th><th class="n">Prob. mañana</th><th class="n">Duración media</th><th class="n">Días en la ventana</th></tr></thead><tbody>'+
+    RG.map((r,k)=>{ let d=0; for (let j=0;j<H.ts.length;j++) d+=H.gamma[j*3+k]; return `<tr style="cursor:default"><td><span class="chip" style="color:var(${CL[k]})">${r}</span></td><td class="n ${sgn(H.mu[k])}">${pct(H.mu[k]*AF)}</td><td class="n">${pct(H.sd[k]*Math.sqrt(AF))}</td><td class="n">${pct(H.last[k],0)}</td><td class="n">${pct(H.next[k],0)}</td><td class="n">${num(1/Math.max(1e-6,1-H.A[k][k]),0)} ruedas</td><td class="n">${num(d,0)}</td></tr>`; }).join('')+'</tbody>';
+  const n=H.ts.length, st=Math.max(1,Math.floor(n/320)), lab=[], ds=[[],[],[]];
+  for (let j=0;j<n;j+=st){ lab.push(fdate(D.dates[H.ts[j]])); for (let k=0;k<3;k++) ds[k].push(H.gamma[j*3+k]*100); }
+  if (chH) chH.destroy();
+  chH=new Chart(document.getElementById('c-hmm'),{type:'line',data:{labels:lab,datasets:RG.map((r,k)=>({label:r,data:ds[k],borderWidth:0,pointRadius:0,fill:k===0?'origin':'-1',backgroundColor:alpha(css(CL[k]),0.7),tension:0}))},
+    options:{responsive:true,maintainAspectRatio:false,interaction:{mode:'index',intersect:false},plugins:{legend:{display:false},tooltip:{callbacks:{label:c=>`${c.dataset.label}: ${num(c.parsed.y,0)}%`}}},
+      scales:{x:axisOpts(),y:Object.assign(axisOpts(),{stacked:true,min:0,max:100,ticks:Object.assign(axisOpts().ticks,{callback:v=>v+'%'})})}}});
+  const rk=H.last.indexOf(Math.max(...H.last));
+  document.getElementById('hmm-n').textContent=`Probabilidad suavizada de cada régimen en la ventana (rojo bajista, gris lateral, verde alcista). Hoy el régimen más probable es ${RG[rk].toLowerCase()} (${pct(H.last[rk],0)}).${PC.mu==='hmm'?' La esperanza μ de la cartera usa estas probabilidades.':' Elegí “Regímenes HMM” en Esperanza μ para usarlas en la cartera.'}`;
+}
+function drawGJR(idx, P, w){
+  const rows=idx.map((i,j)=>({i,j,w:w[j]})).filter(x=>x.w>0.0005).sort((a,b)=>b.w-a.w);
+  document.getElementById('gjr-t').innerHTML=`<thead><tr><th>${U.col}</th><th class="n">Peso</th><th class="n"><span class="gk">α</span></th><th class="n"><span class="gk">γ</span></th><th class="n"><span class="gk">β</span></th><th class="n">Persist.</th><th class="n"><span class="gk">σ</span> hist.</th><th class="n"><span class="gk">σ</span> GJR mañana</th><th class="n">Cond / hist</th><th>Señal</th></tr></thead><tbody>`+
+    rows.map(x=>{ const g=gjrFit(x.i,P.start,P.end), a=D.A[x.i];
+      if (!g) return `<tr data-i="${x.i}"><td class="tk">${esc(a.t)}</td><td class="n">${pct(x.w)}</td><td colspan="8" class="muted">Sin ajuste</td></tr>`;
+      return `<tr data-i="${x.i}"><td class="tk">${esc(a.t)}</td><td class="n">${pct(x.w)}</td><td class="n">${num(g.a,3)}</td><td class="n">${num(g.gm,3)}</td><td class="n">${num(g.b,3)}</td><td class="n">${num(g.pers,3)}</td><td class="n">${pct(g.sH)}</td><td class="n">${pct(g.sN)}</td><td class="n ${g.ratio>1.15?'neg':g.ratio<0.85?'pos':''}">${num(g.ratio)}</td><td>${sigChip(g.sig)}</td></tr>`; }).join('')+'</tbody>';
+  document.getElementById('gjr-t').onclick=e=>{ const tr=e.target.closest('tr[data-i]'); if (tr) openDetail(+tr.dataset.i); };
+}
+
+/* ==================== VALIDACIÓN ==================== */
+let BT_DONE=false, chB=null, chM=null, BT_SERIES=null;
+function runBacktest(){
+  useU(mktU()); PC.win=winOf();
+  const st=document.getElementById('b-status'); st.textContent='Calculando…';
+  setTimeout(()=>{
+    const reb=+document.getElementById('b-reb').value, tc=(+document.getElementById('b-tc').value||0)/10000;
+    const cfg=Object.assign({},PC,{univ:PC.univ==='manual'?'manualbt':'top'});
+    const L=PC.wk==='5A'?HZ[4][1]:PC.win; const s0=L+1;
+    if (s0>=T-63){ st.textContent='La ventana de estimación deja muy poco período fuera de muestra. Elegí 1A o 3A.'; return; }
+    cfg.win=L;
+    let V=[100], Vb=[100], Ve=[100], lab=[fdate(D.dates[s0])]; let w=null, idx=[], we=null, turnTot=0, nreb=0;
+    let cur={}, curE={};
+    for (let t=s0;t<T;t++){
+      if ((t-s0)%reb===0){
+        let sel;
+        if (PC.univ==='manual'){ sel=PC.manual.map(x=>byT[x]).filter(i=>i!=null && (()=>{let c=0;for(let u=t-L;u<t;u++) if(isFinite(R[i][u])) c++; return c>=L*0.97;})()); }
+        else sel=selectUniverse(t-1,cfg,scoreAt(t-1,PC.crit,L));
+        if (sel.length>=2){ const P=buildPortfolio(sel,t-1,cfg); const nw={}, ne={};
+          sel.forEach((i,j)=>{ nw[i]=P.w[j]; ne[i]=1/sel.length; });
+          let to=0; const keys=new Set([...Object.keys(cur),...Object.keys(nw)]); keys.forEach(k=>to+=Math.abs((nw[k]||0)-(cur[k]||0)));
+          let toE=0; const keysE=new Set([...Object.keys(curE),...Object.keys(ne)]); keysE.forEach(k=>toE+=Math.abs((ne[k]||0)-(curE[k]||0)));
+          V[V.length-1]*=1-tc*to; Ve[Ve.length-1]*=1-tc*toE; turnTot+=to; nreb++; cur=nw; curE=ne; }
+      }
+      const step=(h)=>{ let g=0; const nh={}; for (const k in h){ const x=R[k][t]; const r=isFinite(x)?x:0; nh[k]=h[k]*(1+r); g+=nh[k]; } for (const k in nh) nh[k]/=g||1; return [g,nh]; };
+      const [g,nw]=step(cur), [ge,ne]=step(curE); cur=nw; curE=ne;
+      V.push(V[V.length-1]*(Object.keys(nw).length?g:1)); Ve.push(Ve[Ve.length-1]*(Object.keys(ne).length?ge:1));
+      Vb.push(Vb[Vb.length-1]*(1+(isFinite(R[BENCH][t])?R[BENCH][t]:0))); lab.push(fdate(D.dates[t]));
+    }
+    const perf=(v)=>{ const n=v.length-1, rs=[]; let pk=v[0], mdd=0; for (let j=1;j<v.length;j++){ rs.push(v[j]/v[j-1]-1); pk=Math.max(pk,v[j]); mdd=Math.min(mdd,v[j]/pk-1); }
+      const m=rs.reduce((a,b)=>a+b,0)/n, sd=Math.sqrt(rs.reduce((a,b)=>a+(b-m)**2,0)/(n-1)); let rf=0; for (let t=s0;t<T;t++) rf+=RF[t]; rf/=n;
+      return {cagr:Math.pow(v[n]/v[0],AF/n)-1, sd:sd*Math.sqrt(AF), sh:(m-rf)/sd*Math.sqrt(AF), mdd, fin:v[n]}; };
+    const bn=U.bn; document.getElementById('bt-bn').textContent=bn;
+    const a=perf(V), b=perf(Vb), e=perf(Ve);
+    const k=(l,v,s,c='')=>`<div class="kpi"><span class="lbl">${l}</span><span class="v ${c}">${v}</span>${s?`<span class="s">${s}</span>`:''}</div>`;
+    document.getElementById('b-kpis').innerHTML=k('TACC estrategia',pct(a.cagr),`${bn} ${pct(b.cagr)} · 1/N ${pct(e.cagr)}`,sgn(a.cagr))+k('Volatilidad',pct(a.sd),`${bn} ${pct(b.sd)} · 1/N ${pct(e.sd)}`)+
+      k('Sharpe realizado',num(a.sh),`${bn} ${num(b.sh)} · 1/N ${num(e.sh)}`)+k('Máx. caída',pct(a.mdd,0),`${bn} ${pct(b.mdd,0)} · 1/N ${pct(e.mdd,0)}`,'neg')+
+      k('USD 100 →',num(a.fin,0),`${bn} ${num(b.fin,0)} · 1/N ${num(e.fin,0)}`)+k('Rotación media',pct(turnTot/Math.max(1,nreb),0),`${nreb} rebalanceos`);
+    chB=lineChart('c-bt',chB,lab,[{label:'Estrategia',data:V,color:css('--c1'),w:2.2},{label:bn,data:Vb,color:css('--c2')},{label:'1/N',data:Ve,color:css('--c3'),dash:[4,3]}],{log:true});
+    st.textContent=`Fuera de muestra desde ${fdate(D.dates[s0])} · ${U.noun} · ventana ${PC.wk==='1A'?'1 año':'3 años'} · ${PC.univ==='manual'?'universo manual fijo':'top '+PC.n+' por '+document.querySelector('#p-crit option:checked').textContent.toLowerCase()} · ${document.querySelector('#p-meth option:checked').textContent}.`;
+    BT_SERIES={u:U, dates:[D.dates[s0-1],...D.dates.slice(s0,T)].map(Number), V:V.slice(), lbl:document.querySelector('#p-meth option:checked').textContent};
+    runMC(); BT_DONE=true; if (!document.getElementById('v-mia').hidden) mRun();
+  },30);
+}
+function runMC(){
+  useU(mktU()); PC.win=winOf();
+  if (!CUR||CUR.u!==U) renderPortfolio(); const {idx,P}=CUR; const H=+document.getElementById('mc-h').value;
+  const pr=P.X.map(row=>dot(P.w,row));
+  const center=document.getElementById('mc-c').value; const m0=pr.reduce((a,b)=>a+b,0)/pr.length; let target=m0;
+  if (center==='model') target=dot(P.w,P.mu)/AF;
+  if (center==='capm'){ const betas=idx.map(i=>{ const m=metrics(i,PC.win,T-1,0.5); return m&&isFinite(m.beta)?m.beta:1; }); target=(P.rf+dot(P.w,betas)*PC.mrp/100)/AF; }
+  for (let j=0;j<pr.length;j++) pr[j]+=target-m0;
+  const n=pr.length, NP=3000, B=10, step=Math.max(1,Math.floor(H/60));
+  let seed=12345; const rnd=()=>{ seed=(seed*1664525+1013904223)>>>0; return seed/4294967296; };
+  const marks=[]; for (let d=0;d<=H;d+=step) marks.push(d); if (marks[marks.length-1]!==H) marks.push(H);
+  const paths=marks.map(()=>new Float64Array(NP));
+  for (let p=0;p<NP;p++){ let v=100, d=0, mi=1; paths[0][p]=100; let pos=Math.floor(rnd()*n);
+    while (d<H){ if (d%B===0 || rnd()<1/B) pos=Math.floor(rnd()*n); v*=1+pr[pos]; pos=(pos+1)%n; d++; if (marks[mi]===d){ paths[mi][p]=v; mi++; } } }
+  const q=(arr,pp)=>{ const s=Float64Array.from(arr).sort(); return s[Math.min(s.length-1,Math.floor(pp*s.length))]; };
+  const qs=[0.05,0.25,0.5,0.75,0.95].map(pp=>paths.map(a=>q(a,pp)));
+  const lab=marks.map(d=>d===0?'Hoy':(d>=252?num(d/252,1)+' a':Math.round(d/21)+' m'));
+  chM=lineChart('c-mc',chM,lab,[
+    {label:'P95',data:qs[4],color:'transparent',fill:alpha(css('--accent'),0.14),fillTo:'+4'},{label:'P75',data:qs[3],color:'transparent',fill:alpha(css('--accent'),0.22),fillTo:'+2'},
+    {label:'Mediana',data:qs[2],color:css('--c1'),w:2.2},{label:'P25',data:qs[1],color:'transparent'},{label:'P5',data:qs[0],color:css('--muted'),w:1,dash:[3,3]}],{});
+  const fin=Float64Array.from(paths[paths.length-1]).sort(); const mean=fin.reduce((a,b)=>a+b,0)/NP;
+  const ploss=fin.filter(x=>x<100).length/NP, p5=fin[Math.floor(0.05*NP)], k5=Math.floor(0.05*NP); let cv=0; for (let j=0;j<k5;j++) cv+=fin[j]; cv/=k5;
+  const pd=fin.filter(x=>x<80).length/NP;
+  const rows=[['Valor esperado E[V]',num(mean,1)],['Mediana',num(fin[Math.floor(NP/2)],1)],['Percentil 5 (VaR 95%)',num(p5,1)],['Promedio del peor 5% (CVaR)',num(cv,1)],['Percentil 95',num(fin[Math.floor(0.95*NP)],1)],['Probabilidad de pérdida',pct(ploss,0)],['Probabilidad de perder más de 20%',pct(pd,0)]];
+  document.getElementById('mc-t').innerHTML='<tbody>'+rows.map(r=>`<tr style="cursor:default"><td>${r[0]}</td><td class="n mono">${r[1]}</td></tr>`).join('')+'</tbody>';
+}
+document.getElementById('b-run').onclick=runBacktest;
+document.getElementById('mc-h').onchange=()=>{ if (BT_DONE) runMC(); };
+document.getElementById('mc-c').onchange=()=>{ if (BT_DONE) runMC(); };
+
+/* ==================== MI CARTERA ==================== */
+/* Libro de operaciones con fecha (compras, ventas, aportes y retiros de efectivo). La cartera se valúa día a día en dólares
+   (subyacentes en USD; acciones locales al CCL) y en pesos al CCL de cada fecha. Rendimientos: TWR (ponderado por tiempo,
+   encadenado diario) y TIR (ponderado por el dinero, XIRR). Costo por precio promedio ponderado. */
+const UNI={ced:UC, ar:UA}, MKN={ced:'CEDEAR', ar:'Acción AR'};
+const mdt=(d)=>{ d=String(d); return Date.UTC(+d.slice(0,4),+d.slice(4,6)-1,+d.slice(6,8)); };
+const iso=(d)=>{ d=String(d); return d.slice(0,4)+'-'+d.slice(4,6)+'-'+d.slice(6,8); };
+const ymd=(s)=>+String(s||'').replace(/-/g,'');
+const CAL=[...new Set([...UC.D.dates,...UA.D.dates].map(Number))].sort((a,b)=>a-b);
+const CCLH=Array.isArray(UA.D.C)&&UA.D.C.length===UA.D.dates.length;
+// serie en el calendario común CAL[k0..k1], arrastrando el último valor; null antes del primer dato
+function onCal(dates, vals, k0, k1){
+  const out=new Array(k1-k0+1).fill(null); let j=-1, last=null;
+  for (let k=k0;k<=k1;k++){ while (j+1<dates.length && dates[j+1]<=CAL[k]){ j++; if (vals[j]!=null) last=vals[j]; } out[k-k0]=last; }
+  return out;
+}
+function cclOn(k0,k1){ if (!CCLH) return new Array(k1-k0+1).fill(UA.D.ccl); const a=onCal(UA.D.dates,UA.D.C,k0,k1), f=a.find(v=>v!=null)||UA.D.ccl; return a.map(v=>v==null?f:v); }
+const CCLALL=cclOn(0,CAL.length-1);
+const money=(v,cur,d=0)=>(cur==='ARS'?'ARS ':'USD ')+num(v,d);
+// primer día del calendario en o después de d; último día en o antes de d
+function calAt(d){ let lo=0, hi=CAL.length-1; if (d>CAL[hi]) return -1; while (lo<hi){ const m=(lo+hi)>>1; if (CAL[m]>=d) hi=m; else lo=m+1; } return lo; }
+function calLE(d){ let lo=0, hi=CAL.length-1; if (d<CAL[0]) return -1; while (lo<hi){ const m=(lo+hi+1)>>1; if (CAL[m]<=d) lo=m; else hi=m-1; } return lo; }
+const PXC={};
+function pxSer(m,t){ const key=m+':'+t; if (PXC[key]!==undefined) return PXC[key]; const u=UNI[m], i=u&&u.byT[t]; return PXC[key]=(i==null?null:onCal(u.D.dates,u.D.P[i],0,CAL.length-1)); }
+// precio estimado en pesos de una unidad (un CEDEAR o una acción) en el día k del calendario
+function estPxA(m,t,k){ const s=pxSer(m,t); if (!s) return null; const u=UNI[m], a=u.D.A[u.byT[t]], L=CAL.length-1;
+  if (!a.px||s[k]==null||!s[L]) return null; return a.px*s[k]*CCLALL[k]/(s[L]*CCLALL[L]); }
+// TIR anual de flujos [[fecha, monto para el inversor]]: aportes negativos, retiros y valor final positivos
+function xirr(fl){
+  const f=fl.filter(x=>Math.abs(x[1])>1e-9).sort((a,b)=>a[0]-b[0]); if (f.length<2) return null;
+  if (!f.some(x=>x[1]<0)||!f.some(x=>x[1]>0)) return null;
+  const t0=mdt(f[0][0]), ts=f.map(x=>(mdt(x[0])-t0)/864e5/365.25); if (ts[ts.length-1]<7/365) return null;
+  const npv=(r)=>{ let s=0; for (let i=0;i<f.length;i++) s+=f[i][1]/Math.pow(1+r,ts[i]); return s; };
+  let lo=-0.9999, hi=10, flo=npv(lo), fhi=npv(hi);
+  if (flo*fhi>0){ hi=1e4; fhi=npv(hi); if (flo*fhi>0) return null; }
+  for (let it=0;it<300;it++){ const m=(lo+hi)/2, fm=npv(m); if (Math.abs(fm)<1e-9||hi-lo<1e-12) return m; if (flo*fm<0){ hi=m; } else { lo=m; flo=fm; } }
+  return (lo+hi)/2;
+}
+const MK='cedear-mine';
+let MS=null, chMine=null, MVIEW='idx', MSEQ=0;
+const REFS=[['mine','Mi cartera','--c1'],['spy','SPY','--c2'],['merv','Merval CCL','--c4'],['ew','1/N de los mismos activos','--c3'],['opt','Cartera óptima','--c5'],['bt','Estrategia de Validación','--c6'],['tb','T-Bill 13s','--muted']];
+const TY={buy:'Compra', sell:'Venta', dep:'Aporte de efectivo', wd:'Retiro de efectivo'}, TYO={dep:0,buy:1,sell:2,wd:3};
+function mNewId(){ return 'c'+Date.now().toString(36)+(MSEQ++).toString(36)+Math.floor(Math.random()*1e4).toString(36); }
+function txClean(o){
+  if (!o||!TY[o.ty]) return null; const d=+o.d; if (!(d>19000101&&d<21000101)) return null;
+  const x={id:typeof o.id==='string'?o.id.slice(0,40):mNewId(), ty:o.ty, d, m:UNI[o.m]?o.m:'ced', t:String(o.t||'').toUpperCase().trim().slice(0,12),
+    how:['amt','qty','pct'].includes(o.how)?o.how:(o.ty==='sell'?'pct':'amt'), a:Math.max(0,+o.a||0), q:Math.max(0,+o.q||0), px:Math.max(0,+o.px||0),
+    p:Math.max(0,Math.min(100,o.p==null?100:+o.p||0)), fund:o.fund==='cash'?'cash':'new', dst:o.dst==='cash'?'cash':'out'};
+  if ((x.ty==='buy'||x.ty==='sell')&&!x.t) return null;
+  if (x.ty==='buy'&&x.how==='pct') x.how='amt';
+  if (x.ty!=='buy'&&x.ty!=='sell'){ x.how='amt'; x.t=''; }
+  if (x.t==='ALL'){ x.how='pct'; }
+  return x;
+}
+function mExample(){
+  const L=CAL.length-1, back=(n)=>CAL[Math.max(0,L-n)];
+  const tx=[
+    {ty:'buy', d:back(250), m:'ced', t:'SPY', how:'amt', a:3000000},
+    {ty:'buy', d:back(190), m:'ced', t:'AAPL', how:'amt', a:1500000},
+    {ty:'buy', d:back(130), m:'ar', t:'GGAL', how:'amt', a:1000000},
+    {ty:'buy', d:back(70), m:'ced', t:'MSFT', how:'amt', a:1200000},
+    {ty:'sell', d:back(30), m:'ced', t:'AAPL', how:'pct', p:50, dst:'cash'},
+  ].filter(x=>UNI[x.m].byT[x.t]!=null).map(txClean).filter(Boolean);
+  return {id:mNewId(), name:'Ejemplo · compras escalonadas', cur:'ARS', ev:0, tx};
+}
+function mClean(c){
+  if (!c||typeof c!=='object') return null;
+  let tx, cur=c.cur;
+  if (Array.isArray(c.tx)) tx=c.tx.map(txClean).filter(Boolean);
+  else { // formato anterior: una fecha de constitución, montos por activo y liquidaciones
+    const legacy=c.cur==null&&Array.isArray(c.pos)&&c.pos.some(p=>p&&p.a==null&&p.w!=null), cap=Math.max(1,+c.cap||10000), d0=+c.d0||CAL[0];
+    const pos=(Array.isArray(c.pos)?c.pos:[]).filter(p=>p&&UNI[p.m]&&typeof p.t==='string').map(p=>({m:p.m,t:p.t.toUpperCase().slice(0,12),a:Math.max(0,legacy?cap*(+p.w||0)/100:(+p.a||0))}));
+    const inv=pos.reduce((s,p)=>s+p.a,0), cash=Math.max(0,legacy?cap-inv:(+c.cash||0));
+    tx=[]; if (cash>0) tx.push({ty:'dep',d:d0,a:cash});
+    pos.filter(p=>p.a>0).forEach(p=>tx.push({ty:'buy',d:d0,m:p.m,t:p.t,how:'amt',a:p.a,fund:'new'}));
+    (Array.isArray(c.ops)?c.ops:[]).filter(o=>o&&+o.d>19000101).forEach(o=>{ const k=typeof o.k==='string'?o.k:'all';
+      const [m,t]=k==='all'?['ced','ALL']:k.split(':'); tx.push({ty:'sell',d:+o.d,m:UNI[m]?m:'ced',t:(t||'ALL'),how:'pct',p:+o.p||0,dst:o.dst}); });
+    tx=tx.map(txClean).filter(Boolean); if (legacy) cur='USD';
+  }
+  return {id:typeof c.id==='string'?c.id.slice(0,40):mNewId(), name:String(c.name||'Cartera').slice(0,60), cur:cur==='USD'?'USD':'ARS', ev:+c.ev||0, tx};
+}
+function mLoad(){
+  let s=null; try{ s=JSON.parse(localStorage.getItem(MK)||'null'); }catch(e){}
+  const list=s&&Array.isArray(s.list)?s.list.map(mClean).filter(Boolean):[];
+  if (!list.length) list.push(mExample());
+  MS={cur:s&&list.some(c=>c.id===s.cur)?s.cur:list[0].id, list, ref:s&&Array.isArray(s.ref)?s.ref:REFS.map(r=>r[0])};
+}
+const mSave=()=>{ try{ localStorage.setItem(MK,JSON.stringify(MS)); }catch(e){} };
+const mCur=()=>MS.list.find(c=>c.id===MS.cur);
+const txSort=(a,b)=>a.d-b.d||TYO[a.ty]-TYO[b.ty];
+function mHeld(c){ const keys=[]; c.tx.forEach(o=>{ if (o.ty==='buy'){ const k=o.m+':'+o.t; if (!keys.includes(k)) keys.push(k); } }); return keys; }
+
+function simMine(c){
+  const L=CAL.length-1, E=c.ev&&c.ev<CAL[L]?c.ev:CAL[L], cur=c.cur;
+  const tx=c.tx.slice().sort(txSort);
+  if (!tx.length) return {err:'Cargá la primera operación: una compra o un aporte de efectivo.'};
+  const k0=calAt(tx[0].d); if (k0<0) return {err:'La primera operación es posterior al último dato disponible.'};
+  const kE=calLE(E); if (kE<k0) return {err:`La fecha de evaluación (${fdate(E)}) es anterior a la primera operación (${fdate(tx[0].d)}).`};
+  const n=kE-k0+1, miss=new Set(), keys=[];
+  tx.forEach(o=>{ if ((o.ty!=='buy'&&o.ty!=='sell')||o.t==='ALL') return; if (UNI[o.m].byT[o.t]==null){ miss.add(o.t); return; } const k=o.m+':'+o.t; if (!keys.includes(k)) keys.push(k); });
+  const pos=keys.map(k=>{ const [m,t]=k.split(':'); return {m,t,key:k}; }), J=Object.fromEntries(keys.map((k,j)=>[k,j])), P=pos.length;
+  const PX=pos.map(p=>pxSer(p.m,p.t).slice(k0,kE+1)), ccl=CCLALL.slice(k0,kE+1), rf=onCal(UC.D.dates,UC.D.rf,k0,kE), dates=CAL.slice(k0,kE+1);
+  const units=new Float64Array(P), qty=new Float64Array(P), costU=new Float64Array(P), costA=new Float64Array(P), realU=new Float64Array(P), realA=new Float64Array(P);
+  const buyU=new Float64Array(P), buyA=new Float64Array(P), first=new Array(P).fill(null), pfl=pos.map(()=>[]);
+  const V=new Float64Array(n), FU=new Float64Array(n), FA=new Float64Array(n), done={}, warn=[], pend=[];
+  const toU=(a,q)=>cur==='ARS'?a/ccl[q]:a, toA=(a,q)=>cur==='ARS'?a:a*ccl[q];
+  let cash=0, interest=0, ti=0;
+  const exec=(o,q)=>{
+    const f_=ccl[q], dd=dates[q];
+    if (o.ty==='dep'){ const u=toU(o.a,q); cash+=u; FU[q]+=u; FA[q]+=u*f_; done[o.id]={q,u,a:u*f_}; return; }
+    if (o.ty==='wd'){ let u=toU(o.a,q); if (u>cash+1e-9){ warn.push(`El retiro del ${fdate(o.d)} supera el efectivo disponible: se retiró ${money(cur==='ARS'?cash*f_:cash,cur)}.`); u=cash; }
+      cash-=u; FU[q]-=u; FA[q]-=u*f_; done[o.id]={q,u,a:u*f_}; return; }
+    if (o.ty==='buy'){ const j=J[o.m+':'+o.t]; if (j==null) return; const px=PX[j][q];
+      if (px==null){ warn.push(`${o.t} no tiene precio al ${fdate(dd)}: la compra del ${fdate(o.d)} no se tuvo en cuenta.`); done[o.id]={q,skip:true}; return; }
+      let pA, qn; const e=estPxA(o.m,o.t,k0+q);
+      if (o.how==='qty'){ const pr=o.px||e; if (!pr||!(o.q>0)){ warn.push(`A la compra de ${o.t} del ${fdate(o.d)} le falta cantidad o precio.`); done[o.id]={q,skip:true}; return; } pA=o.q*pr; qn=o.q; }
+      else { pA=toA(o.a,q); qn=e?pA/e:0; }
+      const pU=pA/f_;
+      units[j]+=pU/px; qty[j]+=qn; costU[j]+=pU; costA[j]+=pA; buyU[j]+=pU; buyA[j]+=pA; pfl[j].push([dd,-pU,-pA]); if (first[j]==null) first[j]=dd;
+      let ext=pU; if (o.fund==='cash'){ const use=Math.min(cash,pU); cash-=use; ext=pU-use;
+        if (ext>1e-6*pU) warn.push(`La compra de ${o.t} del ${fdate(o.d)} supera el efectivo de la cartera: la diferencia se tomó como aporte nuevo.`); }
+      FU[q]+=ext; FA[q]+=ext*f_; done[o.id]={q,u:pU,a:pA,qn,px:pA/Math.max(qn,1e-12)}; return; }
+    if (o.ty==='sell'){
+      const js=o.t==='ALL'?pos.map((_,j)=>j):[J[o.m+':'+o.t]].filter(j=>j!=null); let totU=0, totA=0, any=false;
+      for (const j of js){ const px=PX[j][q]; if (px==null||units[j]<=1e-12) continue; const val=units[j]*px; let f, pU; any=true;
+        if (o.t==='ALL'||o.how==='pct'){ f=o.p/100; pU=f*val; }
+        else if (o.how==='qty'){ f=qty[j]>0?Math.min(1,o.q/qty[j]):1; pU=o.px?Math.min(o.q,qty[j]||o.q)*o.px/f_:f*val; }
+        else { pU=Math.min(val,toU(o.a,q)); f=pU/val; if (toU(o.a,q)>val*1.0001) warn.push(`La venta de ${o.t} del ${fdate(o.d)} supera la tenencia: se vendió todo.`); }
+        const pA=pU*f_, cU=f*costU[j], cA=f*costA[j];
+        realU[j]+=pU-cU; realA[j]+=pA-cA; costU[j]-=cU; costA[j]-=cA; units[j]*=1-f; qty[j]*=1-f; if (units[j]<1e-12) units[j]=0;
+        pfl[j].push([dd,pU,pA]); totU+=pU; totA+=pA; }
+      if (o.t==='ALL'&&o.dst==='out'&&cash>0){ const cw=cash*o.p/100; cash-=cw; totU+=cw; totA+=cw*f_; any=true; }
+      if (!any){ warn.push(`La venta de ${o.t==='ALL'?'toda la cartera':o.t} del ${fdate(o.d)} no encontró tenencia: no se tuvo en cuenta.`); done[o.id]={q,skip:true}; return; }
+      if (o.dst==='out'){ FU[q]-=totU; FA[q]-=totA; } else cash+=totU;
+      done[o.id]={q,u:totU,a:totA}; }
+  };
+  for (let q=0;q<n;q++){
+    if (q>0 && cash>0){ const g=cash*(Math.pow(1+(rf[q-1]||0)/100,(mdt(dates[q])-mdt(dates[q-1]))/864e5/365)-1); cash+=g; interest+=g; }
+    while (ti<tx.length && tx[ti].d<=dates[q]){ exec(tx[ti],q); ti++; }
+    let v=cash; for (let j=0;j<P;j++) if (units[j]>0) v+=units[j]*PX[j][q]; V[q]=v;
+  }
+  for (;ti<tx.length;ti++) pend.push(tx[ti]);
+  const VA=Float64Array.from(V,(v,q)=>v*ccl[q]), mx=Math.max(...V,1e-9);
+  const twr=(Vs,F)=>{ const I=new Float64Array(n); I[0]=100; for (let q=1;q<n;q++) I[q]=Vs[q-1]>1e-9*mx?I[q-1]*(Vs[q]-F[q])/Vs[q-1]:I[q-1]; return I; };
+  const IU=twr(V,FU), IA=twr(VA,FA);
+  const flows=(F,Vend)=>{ const a=[]; for (let q=0;q<n;q++) if (Math.abs(F[q])>1e-9) a.push([dates[q],-F[q]]); a.push([dates[n-1],Vend]); return a; };
+  return {k0, kE, n, dates, V, VA, FU, FA, IU, IA, ccl, rf, pos, PX, units, qty, costU, costA, realU, realA, buyU, buyA, first, pfl, cash, interest,
+    done, warn, pend, miss:[...miss], cur, E:dates[n-1], irrU:xirr(flows(FU,V[n-1])), irrA:xirr(flows(FA,VA[n-1])), flowsU:flows, empty:mx<=1e-9};
+}
+// mismos aportes y retiros aplicados a una serie índice
+function mirror(I, F, n){ let m=0; const Vm=new Float64Array(n);
+  for (let q=0;q<n;q++){ const x=I[q]; if (x>0){ m+=F[q]/x; if (m<0) m=0; } Vm[q]=m*(x||0); } return Vm; }
+// TIR: anual si el período cubre al menos un año; si no, la del período (anualizar plazos cortos exagera)
+const irrCell=(r,yrs)=>r==null?'—':yrs>=0.95?`${pct(r)}<span class="muted" style="font-size:11px"> anual</span>`:`${pct(Math.pow(1+r,yrs)-1)}<span class="muted" style="font-size:11px"> período</span>`;
+const irrV=(r,yrs)=>r==null?null:yrs>=0.95?r:Math.pow(1+r,yrs)-1;
+function bhIdx(arrs, w, n){
+  const ok=arrs.map(a=>a&&a[0]!=null&&a[0]>0); let s=0; w.forEach((x,j)=>{ if (ok[j]) s+=x; }); if (!(s>0)) return null;
+  const u=w.map((x,j)=>ok[j]?x/s/arrs[j][0]:0), I=new Array(n);
+  for (let q=0;q<n;q++){ let v=0; for (let j=0;j<u.length;j++) if (u[j]) v+=u[j]*arrs[j][q]; I[q]=100*v; }
+  return {I, dropped:ok.filter(x=>!x).length};
+}
+// 1/N de los mismos activos: cada activo entra a la canasta desde su primer precio, rebalanceo diario a partes iguales
+function ewIdx(arrs, n){ const I=new Array(n); I[0]=100;
+  for (let q=1;q<n;q++){ let s=0, c=0; for (const a of arrs){ if (a[q]!=null&&a[q-1]!=null&&a[q-1]>0){ s+=a[q]/a[q-1]-1; c++; } } I[q]=I[q-1]*(1+(c?s/c:0)); } return I; }
+function getOptimal(){
+  const prev=U; useU(mktU()); PC.win=winOf();
+  if (!CUR||CUR.u!==U){ const idx=selectUniverse(T-1,PC,scoreAt(T-1,PC.crit,PC.win)); if (idx.length>=2) CUR={idx,P:buildPortfolio(idx,T-1,PC),u:U}; }
+  const r=CUR&&CUR.u===U?CUR:null; if (prev) useU(prev); return r;
+}
+function idxStats(I, dates, tb){
+  const n=I.length; if (n<2) return null;
+  const yrs=(mdt(dates[n-1])-mdt(dates[0]))/864e5/365.25, tot=I[n-1]/I[0]-1, cagr=yrs>=0.95?Math.pow(1+tot,1/yrs)-1:null;
+  const r=[], ex=[]; let pk=I[0], mdd=0;
+  for (let q=1;q<n;q++){ const x=I[q]/I[q-1]-1; r.push(x); ex.push(x-(tb[q]/tb[q-1]-1)); pk=Math.max(pk,I[q]); mdd=Math.min(mdd,I[q]/pk-1); }
+  const af=(n-1)/Math.max(yrs,1e-9), mean=(a)=>a.reduce((p,q)=>p+q,0)/a.length, m=mean(r), me=mean(ex);
+  const sd=Math.sqrt(r.reduce((p,x)=>p+(x-m)**2,0)/Math.max(1,r.length-1));
+  return {tot, cagr, vol:n>20?sd*Math.sqrt(af):null, sh:n>20&&sd>0?me/sd*Math.sqrt(af):null, mdd, r, yrs};
+}
+function corr(a,b){ const n=Math.min(a.length,b.length); if (n<20) return null; let ma=0,mb=0; for (let i=0;i<n;i++){ma+=a[i];mb+=b[i];} ma/=n; mb/=n;
+  let sab=0,saa=0,sbb=0; for (let i=0;i<n;i++){ const x=a[i]-ma,y=b[i]-mb; sab+=x*y; saa+=x*x; sbb+=y*y; } return saa>0&&sbb>0?sab/Math.sqrt(saa*sbb):null; }
+
+/* ---------- formulario ---------- */
+const TXHOW={buy:[['amt','Monto'],['qty','Cantidad y precio']], sell:[['pct','% de la tenencia'],['qty','Cantidad'],['amt','Monto']]};
+function mForm(){
+  const g=(id)=>document.getElementById(id), c=mCur(), ty=g('m-ty').value, isB=ty==='buy', isS=ty==='sell', hw=g('m-thw');
+  if (isB||isS){ const prev=hw.value; hw.innerHTML=TXHOW[ty].map(([v,l])=>`<option value="${v}">${l}</option>`).join(''); if (TXHOW[ty].some(x=>x[0]===prev)) hw.value=prev; }
+  const sellAll=isS&&g('m-ts').value==='ALL', how=sellAll?'pct':hw.value;
+  g('f-tm').hidden=!isB; g('f-tt').hidden=!isB; g('f-ts').hidden=!isS; g('f-thw').hidden=!(isB||(isS&&!sellAll));
+  g('f-tpc').hidden=!(isS&&how==='pct'); g('f-tn').hidden=!((isB||isS)&&how==='qty'); g('f-tp').hidden=!((isB||isS)&&how==='qty');
+  g('f-ta').hidden=(isB||isS)&&how!=='amt'; g('f-tf').hidden=!isB; g('f-tdst').hidden=!isS;
+  g('m-tal').textContent=`Monto (${c.cur})`; g('m-ta').step=c.cur==='ARS'?'1000':'10';
+  if (isS){ const held=mHeld(c), cur_=g('m-ts').value;
+    g('m-ts').innerHTML=held.map(k=>`<option value="${esc(k)}">${esc(k.split(':')[1])} · ${MKN[k.split(':')[0]]}</option>`).join('')+'<option value="ALL">Toda la cartera</option>';
+    if ([...held,'ALL'].includes(cur_)) g('m-ts').value=cur_; }
+  mHint();
+}
+function mHint(){
+  const g=(id)=>document.getElementById(id), c=mCur(), ty=g('m-ty').value, d=ymd(g('m-td').value), h=g('m-thint');
+  let m, t; if (ty==='buy'){ m=g('m-tm').value; t=g('m-tt').value.trim().toUpperCase(); } else if (ty==='sell'&&g('m-ts').value!=='ALL'){ [m,t]=(g('m-ts').value||':').split(':'); }
+  const k=d?calAt(d):-1; let txt='';
+  if (m&&t&&UNI[m]&&UNI[m].byT[t]!=null&&k>=0){ const e=estPxA(m,t,k);
+    if (e){ g('m-tp').placeholder=num(e,2); txt=`Precio de mercado estimado de ${t} al ${fdate(CAL[k])}: ARS ${num(e,2)} por unidad · CCL ${num(CCLALL[k],2)}.`;
+      const how=g('m-thw').value, a=+g('m-ta').value||0, qn=+g('m-tn').value||0, pr=+g('m-tp').value||e;
+      if (ty==='buy'&&how==='amt'&&a>0) txt+=` Ese monto equivale a unas ${num((c.cur==='ARS'?a:a*CCLALL[k])/e,0)} unidades.`;
+      if ((ty==='buy'||ty==='sell')&&how==='qty'&&qn>0) txt+=` ${num(qn,0)} unidades a ARS ${num(pr,2)} = ARS ${num(qn*pr,0)} (USD ${num(qn*pr/CCLALL[k],0)}).`; } }
+  else if (d&&k<0) txt='La fecha es posterior al último dato: la operación queda pendiente hasta que haya precios.';
+  h.textContent=txt;
+}
+function mTxTable(S){
+  const c=mCur(), A=c.cur==='ARS', done=S&&!S.err?S.done:{}, pend=new Set(S&&!S.err?S.pend.map(o=>o.id):[]);
+  const rows=c.tx.slice().sort(txSort).map(o=>{ const dn=done[o.id], what=o.ty==='buy'||o.ty==='sell'?(o.t==='ALL'?'Toda la cartera':`${esc(o.t)} <span class="muted">${MKN[o.m]}</span>`):'<span class="muted">Efectivo</span>';
+    const how=o.ty==='sell'?(o.t==='ALL'||o.how==='pct'?`${num(o.p,0)}%`:o.how==='qty'?num(o.q,0):'—'):o.how==='qty'?num(o.q,0):(dn&&dn.qn?'≈ '+num(dn.qn,0):'—');
+    const pr=o.how==='qty'?(o.px?num(o.px,2):(dn&&dn.px?'≈ '+num(dn.px,2):'estimado')):(dn&&dn.qn&&dn.px&&o.ty==='buy'?'≈ '+num(dn.px,2):'—');
+    const amt=dn&&!dn.skip?(A?dn.a:dn.u):(o.how==='amt'?o.a:null);
+    const fx=o.ty==='buy'?(o.fund==='cash'?'Efectivo':'Aporte nuevo'):o.ty==='sell'?(o.dst==='cash'?'A efectivo':'Se retira'):o.ty==='dep'?'Entra':'Sale';
+    const st=pend.has(o.id)?'<span class="chip warn">pendiente</span>':dn&&dn.skip?'<span class="chip warn">sin efecto</span>':dn&&S.dates[dn.q]!==o.d?`<span class="muted">ejec. ${fdate(S.dates[dn.q])}</span>`:'';
+    return `<tr style="cursor:default"><td class="mono">${fdate(o.d)}</td><td>${TY[o.ty]}</td><td>${what}</td><td class="n">${how}</td><td class="n hm">${pr}</td><td class="n">${amt==null?'—':num(amt,0)}</td><td class="hm">${fx}</td><td>${st}</td><td><button class="xb" data-trm="${esc(o.id)}" title="Quitar">×</button></td></tr>`; });
+  document.getElementById('m-tx').innerHTML=`<thead><tr><th style="cursor:default">Fecha</th><th style="cursor:default">Tipo</th><th style="cursor:default">Activo</th><th class="n" style="cursor:default">Cantidad</th><th class="n hm" style="cursor:default">Precio ARS</th><th class="n" style="cursor:default">Monto ${c.cur}</th><th class="hm" style="cursor:default">Dinero</th><th style="cursor:default"></th><th style="cursor:default"></th></tr></thead><tbody>`+
+    (rows.join('')||'<tr style="cursor:default"><td colspan="9" class="muted">Sin operaciones todavía. Cargá una compra con su fecha.</td></tr>')+'</tbody>';
+  const nb=c.tx.filter(o=>o.ty==='buy').length, ns=c.tx.filter(o=>o.ty==='sell').length;
+  document.getElementById('m-txs').textContent=`${c.tx.length} operaciones · ${nb} compras · ${ns} ventas`;
+}
+function mFill(){
+  const c=mCur(), lo=iso(CAL[0]), hi=iso(CAL[CAL.length-1]), g=(id)=>document.getElementById(id);
+  g('m-sel').innerHTML=MS.list.map(x=>`<option value="${esc(x.id)}"${x.id===c.id?' selected':''}>${esc(x.name)}</option>`).join('');
+  g('m-name').value=c.name; g('m-cur').value=c.cur;
+  const ev=g('m-ev'); ev.min=lo; ev.max=hi; ev.value=iso(c.ev&&c.ev<CAL[CAL.length-1]?c.ev:CAL[CAL.length-1]);
+  const td=g('m-td'); td.min=lo; td.max=''; if (!td.value) td.value=hi;
+  g('m-evn').textContent=c.ev&&c.ev<CAL[CAL.length-1]?'Evaluación histórica: las operaciones posteriores no se cuentan.':`Último dato: ${fdate(CAL[CAL.length-1])}${D_CED.live||D_AR.live?' (precio en rueda)':''}.`;
+  mDatalist(); mForm();
+}
+function mDatalist(){ const u=UNI[document.getElementById('m-tm').value]; document.getElementById('m-dl').innerHTML=u.D.A.map(a=>`<option value="${esc(a.t)}">${esc(a.n)}</option>`).join(''); }
+function mRefs(){
+  document.getElementById('m-ref').innerHTML=REFS.map(([k,l,col])=>{ const on=MS.ref.includes(k);
+    const lab=k==='bt'&&!BT_SERIES?'Estrategia de Validación · correr ahora':k==='opt'?`Cartera óptima (${document.querySelector('#p-meth option:checked').textContent})`:l;
+    return `<button data-ref="${k}" aria-pressed="${on}"><i style="background:var(${col})"></i>${esc(lab)}</button>`; }).join('');
+}
+function renderMine(){ if (!MS) mLoad(); mFill(); mRun(); }
+function mClear(){ ['m-kpis','m-cmp','m-hold','m-pt'].forEach(id=>document.getElementById(id).innerHTML=''); document.getElementById('m-note').textContent=''; if (chMine){ chMine.destroy(); chMine=null; } }
+
+function mRun(){
+  const c=mCur(); mRefs();
+  const st=document.getElementById('m-status'), S=simMine(c); mTxTable(S);
+  if (S.err){ st.textContent=S.err; mClear(); return; }
+  const n=S.n, k0=S.k0, kE=S.kE, A=S.cur==='ARS', cur=S.cur, cE=S.ccl[n-1], c0=S.ccl[0], notes=[];
+  if (S.empty){ st.textContent='La cartera no tuvo valor en el período: revisá que las compras tengan monto o cantidad.'; mClear(); return; }
+  st.textContent=`${S.pos.length} activos · ${c.tx.length} operaciones · ${fdate(S.dates[0])} → ${fdate(S.E)} · CCL ${num(c0,2)} → ${num(cE,2)}`+
+    (S.miss.length?` · fuera del panel actual: ${S.miss.join(', ')}`:'')+(S.pend.length?` · ${S.pend.length} operación(es) posteriores a la evaluación`:'');
+  // referencias como índices en el mismo calendario
+  const tb=[100]; for (let q=1;q<n;q++) tb.push(tb[q-1]*Math.pow(1+(S.rf[q-1]||0)/100,(mdt(S.dates[q])-mdt(S.dates[q-1]))/864e5/365));
+  const ser={mine:Array.from(S.IU), tb};
+  const spy=onCal(UC.D.dates,UC.D.P[UC.byT.SPY],k0,kE); if (spy[0]) ser.spy=spy.map(v=>100*v/spy[0]);
+  const mv_=onCal(UA.D.dates,UA.D.B,k0,kE); if (mv_[0]) ser.merv=mv_.map(v=>100*v/mv_[0]);
+  if (S.pos.length>1) ser.ew=ewIdx(S.PX,n);
+  const O=getOptimal();
+  if (O){ const u=O.u, arrs=O.idx.map(i=>onCal(u.D.dates,u.D.P[i],k0,kE)), b=bhIdx(arrs,Array.from(O.P.w),n);
+    if (b){ ser.opt=b.I; if (b.dropped) notes.push(`La cartera óptima omite ${b.dropped} activo(s) sin precio al ${fdate(S.dates[0])}.`); } }
+  if (BT_SERIES){ const a=onCal(BT_SERIES.dates,BT_SERIES.V,k0,kE);
+    if (a[0]) ser.bt=a.map(v=>100*v/a[0]); else notes.push(`La estrategia de Validación empieza el ${fdate(BT_SERIES.dates[0])}, después de la primera operación.`); }
+  const toA_=(I)=>I.map((v,q)=>v*S.ccl[q]/c0);
+  // resultados con los mismos aportes
+  const mir={};
+  for (const [key] of REFS){ if (!ser[key]) continue;
+    if (key==='mine'){ mir.mine={VU:S.V, VA:S.VA, irrU:S.irrU, irrA:S.irrA}; continue; }
+    const VU=mirror(ser[key],S.FU,n), IAr=toA_(ser[key]), VA=mirror(IAr,S.FA,n);
+    mir[key]={VU, VA, irrU:xirr(S.flowsU(S.FU,VU[n-1])), irrA:xirr(S.flowsU(S.FA,VA[n-1]))}; }
+  let inU=0, outU=0, inA=0, outA=0; for (let q=0;q<n;q++){ if (S.FU[q]>0){ inU+=S.FU[q]; inA+=S.FA[q]; } else { outU-=S.FU[q]; outA-=S.FA[q]; } }
+  const res=(key)=>{ const m=mir[key]; return A?m.VA[n-1]+outA-inA:m.VU[n-1]+outU-inU; };
+  const valE=A?S.VA[n-1]:S.V[n-1], inC=A?inA:inU, outC=A?outA:outU, R=res('mine');
+  let real=0, unr=0; for (let j=0;j<S.pos.length;j++){ const v=S.units[j]*S.PX[j][n-1]; real+=A?S.realA[j]:S.realU[j]; unr+=A?v*cE-S.costA[j]:v-S.costU[j]; }
+  const mS=idxStats(ser.mine,S.dates,tb), tA=S.IA[n-1]/100-1, yrs=mS.yrs;
+  const k=(l,v,s,cl='')=>`<div class="kpi"><span class="lbl">${l}</span><span class="v ${cl}">${v}</span>${s?`<span class="s">${s}</span>`:''}</div>`;
+  const irrTxt=(r)=>r==null?'—':pct(r);
+  const irrSub=(r)=>r==null?'hace falta un período más largo':yrs<1?`anual · ${pct(Math.pow(1+r,yrs)-1)} en el período`:'anual';
+  const dSPY=mir.spy?R-res('spy'):null;
+  document.getElementById('m-kpis').innerHTML=
+    k(`Valor al ${fdate(S.E)}`,money(valE,cur),A?`≈ USD ${num(S.V[n-1],0)} · CCL ${num(cE,2)}`:`≈ ARS ${num(S.VA[n-1],0)} · CCL ${num(cE,2)}`)+
+    k('Aportes netos',money(inC-outC,cur),`aportado ${money(inC,cur)} · retirado ${money(outC,cur)}`)+
+    k('Resultado',money(R,cur),`${pct(inC>0?R/inC:null)} de lo aportado · realizado ${num(real,0)} · no realizado ${num(unr,0)}`,sgn(R))+
+    k('TWR en USD',pct(mS.tot),mS.cagr!=null?`TACC ${pct(mS.cagr)}`:'período menor a un año',sgn(mS.tot))+
+    k('TWR en ARS',pct(tA),'incluye la variación del CCL',sgn(tA))+
+    k('TIR en USD',irrTxt(S.irrU),irrSub(S.irrU),sgn(S.irrU))+
+    k('TIR en ARS',irrTxt(S.irrA),irrSub(S.irrA),sgn(S.irrA))+
+    k('Volatilidad',pct(mS.vol),'anualizada, TWR en USD')+k('Sharpe',num(mS.sh),'vs T-Bill')+k('Máx. caída',pct(mS.mdd,0),'TWR en USD','neg')+
+    (dSPY!=null?k('Contra SPY',(dSPY>=0?'+':'')+money(dSPY,cur),'con los mismos aportes',sgn(dSPY)):'');
+  // rendimiento por período
+  const E=S.dates[n-1], ed=new Date(mdt(E)), back=(mo)=>{ const g=new Date(ed); g.setUTCMonth(g.getUTCMonth()-mo); return +(g.toISOString().slice(0,10).replace(/-/g,'')); };
+  const PER=[['1 mes',back(1)],['3 meses',back(3)],['6 meses',back(6)],['Año en curso',+(String(E).slice(0,4)+'0101')-1],['1 año',back(12)],['3 años',back(36)],['Desde el inicio',0]];
+  const PS=[['Mi cartera · USD',ser.mine],['Mi cartera · ARS',Array.from(S.IA)],['SPY',ser.spy],['Merval CCL',ser.merv],['T-Bill 13s',tb]].filter(x=>x[1]);
+  const perVal=(I,tg)=>{ let qs; if (!tg) qs=0; else { if (tg<S.dates[0]) return null; qs=0; while (qs+1<n&&S.dates[qs+1]<=tg) qs++; }
+    const tot=I[n-1]/I[qs]-1, y=(mdt(E)-mdt(S.dates[qs]))/864e5/365.25; return {tot, ann:y>=0.95?Math.pow(1+tot,1/y)-1:null, y}; };
+  document.getElementById('m-perl').textContent=`Al ${fdate(E)} · acumulado`;
+  document.getElementById('m-pt').innerHTML=`<thead><tr><th style="cursor:default">Serie</th>${PER.map(p=>`<th class="n" style="cursor:default">${p[0]}</th>`).join('')}</tr></thead><tbody>`+
+    PS.map(([l,I])=>`<tr style="cursor:default"><td class="tk">${l}</td>${PER.map(([,tg])=>{ const v=perVal(I,tg); if (!v) return '<td class="n muted">—</td>';
+      return `<td class="n ${sgn(v.tot)}">${pct(v.tot)}${v.ann!=null&&v.y>1.05?`<br><span class="muted" style="font-size:11.5px">${pct(v.ann)} anual</span>`:''}</td>`; }).join('')}</tr>`).join('')+'</tbody>';
+  // gráfico
+  const lab=S.dates.map(fdate), sets=[], val=MVIEW==='usd'||MVIEW==='ars', inARS=MVIEW==='idxa'||MVIEW==='ars';
+  for (const [key,l,col] of REFS){ if (!ser[key]||!MS.ref.includes(key)) continue;
+    const isM=key==='mine'; let data;
+    if (MVIEW==='idx') data=ser[key]; else if (MVIEW==='idxa') data=isM?Array.from(S.IA):toA_(ser[key]);
+    else data=Array.from(MVIEW==='usd'?mir[key].VU:mir[key].VA);
+    sets.push({label:isM?c.name:key==='opt'?'Cartera óptima':l,data,color:css(col),w:isM?2.6:1.5,dash:key==='tb'?[2,3]:key==='bt'||key==='opt'?[5,3]:[]}); }
+  if (val){ let s=0; const cum=[]; for (let q=0;q<n;q++){ s+=MVIEW==='usd'?S.FU[q]:S.FA[q]; cum.push(Math.max(0,s)); }
+    sets.push({label:'Aportes netos acumulados',data:cum,color:css('--ink'),w:1.2,dash:[2,3]}); }
+  chMine=lineChart('c-m',chMine,lab,sets,{});
+  if (MS.ref.includes('mine')){ const base=MVIEW==='idx'?ser.mine:MVIEW==='idxa'?Array.from(S.IA):Array.from(MVIEW==='usd'?S.V:S.VA);
+    const pts=base.map((v,q)=>Math.abs(S.FU[q])>1e-9?v:null);
+    chMine.data.datasets.push({label:'Aportes y retiros',data:pts,showLine:false,pointRadius:4,pointHoverRadius:6,pointStyle:'triangle',borderColor:css('--ink'),backgroundColor:css('--ink')});
+    chMine.update(); }
+  if (S.warn.length) notes.unshift(...S.warn);
+  if (val) notes.push('En las vistas de valor, cada referencia muestra lo que valdría ese mismo dinero aportado en las mismas fechas; la línea punteada negra son los aportes netos acumulados y los triángulos marcan cada aporte o retiro.');
+  else notes.push('En las vistas TWR, todas las series arrancan en 100 el día de la primera operación; los aportes y retiros no mueven el índice.');
+  if (inARS) notes.push('En pesos, todas las series se convierten con el CCL de cada fecha.');
+  if (!CCLH) notes.push('Los datos no traen la historia del CCL: los montos en pesos usan el CCL de hoy.');
+  document.getElementById('m-note').textContent=notes.join(' ');
+  // comparación con los mismos aportes
+  document.getElementById('m-per').textContent=`${fdate(S.dates[0])} → ${fdate(E)} · mismos aportes y retiros`;
+  const rows=REFS.filter(([key])=>ser[key]).map(([key,l,col])=>{ const I=ser[key], s=idxStats(I,S.dates,tb), cr=key==='mine'?null:corr(s.r,mS.r), ra=key==='mine'?tA:I[n-1]/I[0]*cE/c0-1, m=mir[key], fin=A?m.VA[n-1]:m.VU[n-1], rr=res(key), irr=A?m.irrA:m.irrU;
+    return `<tr style="cursor:default"><td class="tk"><i style="display:inline-block;width:10px;height:3px;background:var(${col});vertical-align:middle;margin-right:8px"></i>${esc(key==='mine'?c.name:key==='opt'?'Cartera óptima':l)}</td><td class="n">${money(fin,cur)}</td><td class="n ${sgn(rr)}">${num(rr,0)}</td><td class="n ${sgn(irr)}">${irrCell(irr,yrs)}</td><td class="n ${sgn(s.tot)}">${pct(s.tot)}</td><td class="n ${sgn(ra)}">${pct(ra)}</td><td class="n">${pct(s.vol)}</td><td class="n">${num(s.sh)}</td><td class="n neg">${pct(s.mdd,0)}</td><td class="n">${cr==null?'—':num(cr)}</td></tr>`; });
+  document.getElementById('m-cmp').innerHTML=`<thead><tr><th style="cursor:default">Serie</th><th class="n" style="cursor:default">Valor al ${fdate(E)}</th><th class="n" style="cursor:default">Resultado ${cur}</th><th class="n" style="cursor:default">TIR ${cur}</th><th class="n" style="cursor:default">TWR USD</th><th class="n" style="cursor:default">TWR ARS</th><th class="n" style="cursor:default"><span class="gk">σ</span> anual</th><th class="n" style="cursor:default">Sharpe</th><th class="n" style="cursor:default">Máx. caída</th><th class="n" style="cursor:default">Correlación</th></tr></thead><tbody>`+rows.join('')+'</tbody>';
+  // posiciones al día de evaluación
+  document.getElementById('m-hd').textContent=`Al ${fdate(E)} · CCL ${num(cE,2)} · montos en ${cur}`;
+  let tV=0, tC=0, tR=0, tU=0, tB=0;
+  const hrows=S.pos.map((p,j)=>{ const u=UNI[p.m], a=u.D.A[u.byT[p.t]], vU=S.units[j]*S.PX[j][n-1], v=A?vU*cE:vU, cost=A?S.costA[j]:S.costU[j], rl=A?S.realA[j]:S.realU[j], ur=v-cost, bought=A?S.buyA[j]:S.buyU[j];
+    const fl=S.pfl[j].map(x=>[x[0],A?x[2]:x[1]]); if (v>1e-9) fl.push([E,v]); const irr=xirr(fl), e=estPxA(p.m,p.t,kE), open=S.units[j]>1e-12, py=S.first[j]?(mdt(E)-mdt(S.first[j]))/864e5/365.25:0;
+    tV+=v; tC+=cost; tR+=rl; tU+=ur; tB+=bought;
+    return `<tr data-m="${p.m}" data-i="${u.byT[p.t]}"><td class="tk">${esc(p.t)}${open?'':' <span class="chip">cerrada</span>'}</td><td class="muted">${MKN[p.m]}</td><td class="n">${open?num(S.qty[j],0):'—'}</td><td class="n">${e?num(e,2):'—'}</td><td class="n">${num(v,0)}</td><td class="n">${valE>0?pct(v/valE):'—'}</td><td class="n">${num(cost,0)}</td><td class="n ${sgn(ur)}">${open?num(ur,0):'—'}</td><td class="n ${sgn(rl)}">${num(rl,0)}</td><td class="n ${sgn(ur+rl)}">${pct(bought>0?(ur+rl)/bought:null)}</td><td class="n ${sgn(irr)}">${irrCell(irr,py)}</td><td class="mono">${S.first[j]?fdate(S.first[j]):'—'}</td></tr>`; });
+  const cashC=A?S.cash*cE:S.cash;
+  document.getElementById('m-hold').innerHTML=`<thead><tr><th style="cursor:default">Ticker</th><th style="cursor:default">Mercado</th><th class="n" style="cursor:default">Cantidad</th><th class="n" style="cursor:default">Precio ARS</th><th class="n" style="cursor:default">Valor</th><th class="n" style="cursor:default">Peso</th><th class="n" style="cursor:default">Costo</th><th class="n" style="cursor:default">No realizado</th><th class="n" style="cursor:default">Realizado</th><th class="n" style="cursor:default">Resultado %</th><th class="n" style="cursor:default">TIR</th><th style="cursor:default">Primera compra</th></tr></thead><tbody>`+hrows.join('')+
+    `<tr style="cursor:default"><td class="tk">Efectivo</td><td class="muted">T-Bill</td><td></td><td></td><td class="n">${num(cashC,0)}</td><td class="n">${valE>0?pct(cashC/valE):'—'}</td><td></td><td colspan="5" class="muted">intereses ganados ${money(A?S.interest*cE:S.interest,cur)}</td></tr></tbody>`+
+    `<tfoot><tr><td>Total</td><td></td><td></td><td></td><td class="n">${num(valE,0)}</td><td class="n">100%</td><td class="n">${num(tC,0)}</td><td class="n ${sgn(tU)}">${num(tU,0)}</td><td class="n ${sgn(tR)}">${num(tR,0)}</td><td class="n ${sgn(tU+tR)}">${pct(tB>0?(tU+tR)/tB:null)}</td><td class="n ${sgn(A?S.irrA:S.irrU)}">${irrCell(A?S.irrA:S.irrU,yrs)}</td><td></td></tr></tfoot>`;
+}
+
+/* ---------- importación de operaciones en texto ---------- */
+function parseNum(s){ s=String(s||'').trim().replace(/\s/g,'').replace(/^(ARS|USD|\$)/i,''); if (!s) return 0;
+  if (s.includes(',')&&s.includes('.')) s=s.lastIndexOf(',')>s.lastIndexOf('.')?s.replace(/\./g,'').replace(',','.'):s.replace(/,/g,'');
+  else if (s.includes(',')) s=s.replace(',','.'); else if (/^\d{1,3}(\.\d{3})+$/.test(s)) s=s.replace(/\./g,'');
+  const v=+s; return isFinite(v)?v:NaN; }
+function parseDate(s){ s=String(s||'').trim(); let m=s.match(/^(\d{4})-(\d{1,2})-(\d{1,2})$/); if (m) return +(m[1]+m[2].padStart(2,'0')+m[3].padStart(2,'0'));
+  m=s.match(/^(\d{1,2})[\/.-](\d{1,2})[\/.-](\d{2,4})$/); if (m){ const y=m[3].length===2?'20'+m[3]:m[3]; return +(y+m[2].padStart(2,'0')+m[1].padStart(2,'0')); } return 0; }
+function parseTxText(txt){
+  const out=[], bad=[];
+  txt.split(/\r?\n/).map(l=>l.trim()).filter(l=>l&&!/^fecha/i.test(l)).forEach((l,ln)=>{
+    const sep=l.includes(';')?';':l.includes('\t')?'\t':',', f=l.split(sep).map(x=>x.trim());
+    const d=parseDate(f[0]), tp=(f[1]||'').toLowerCase(), ty=/^comp/.test(tp)?'buy':/^vent/.test(tp)?'sell':/^(apor|dep)/.test(tp)?'dep':/^ret/.test(tp)?'wd':null;
+    const mk=(f[2]||'').toLowerCase(), m=/^(ar|acc|arg|loc)/.test(mk)?'ar':'ced', t=(f[3]||'').toUpperCase(), q=parseNum(f[4]), px=parseNum(f[5]), a=parseNum(f[6]);
+    if (!d||!ty||[q,px,a].some(v=>isNaN(v))){ bad.push(ln+1); return; }
+    let o;
+    if (ty==='dep'||ty==='wd') o={ty,d,a:a||q};
+    else if (ty==='buy') o=q>0?{ty,d,m,t,how:'qty',q,px}:{ty,d,m,t,how:'amt',a};
+    else o=q>0?{ty,d,m,t,how:'qty',q,px}:a>0?{ty,d,m,t,how:'amt',a}:{ty,d,m,t,how:'pct',p:100};
+    const x=txClean(o); if (x&&((x.ty!=='buy'&&x.ty!=='sell')||UNI[x.m].byT[x.t]!=null||x.t==='ALL')) out.push(x); else bad.push(ln+1); });
+  return {out, bad};
+}
+
+(function(){
+  const g=(id)=>document.getElementById(id), upd=(f)=>{ f(mCur()); mSave(); mRun(); };
+  g('m-sel').onchange=e=>{ MS.cur=e.target.value; mSave(); renderMine(); };
+  g('m-name').onchange=e=>{ upd(c=>{ c.name=e.target.value.trim().slice(0,60)||'Cartera'; }); mFill(); };
+  g('m-new').onclick=()=>{ MS.list.push({id:mNewId(), name:'Cartera '+(MS.list.length+1), cur:'ARS', ev:0, tx:[]}); MS.cur=MS.list[MS.list.length-1].id; mSave(); renderMine(); };
+  g('m-dup').onclick=()=>{ const c=JSON.parse(JSON.stringify(mCur())); c.id=mNewId(); c.name=(c.name+' (copia)').slice(0,60); c.tx.forEach(o=>{ o.id=mNewId(); }); MS.list.push(c); MS.cur=c.id; mSave(); renderMine(); };
+  let delT=null; const delB=g('m-del');
+  delB.onclick=()=>{ if (!delT){ delB.textContent='Confirmar eliminación'; delB.classList.remove('ghost'); delT=setTimeout(()=>{ delT=null; delB.textContent='Eliminar'; delB.classList.add('ghost'); },4000); return; }
+    clearTimeout(delT); delT=null; delB.textContent='Eliminar'; delB.classList.add('ghost');
+    MS.list=MS.list.filter(c=>c.id!==MS.cur); if (!MS.list.length) MS.list.push(mExample()); MS.cur=MS.list[0].id; mSave(); renderMine(); };
+  g('m-cur').onchange=e=>{ const nc=e.target.value==='USD'?'USD':'ARS';
+    upd(c=>{ if (c.cur===nc) return; c.tx.forEach(o=>{ if (o.how==='amt'&&o.a>0){ const k=Math.max(0,Math.min(CAL.length-1,calAt(o.d)<0?CAL.length-1:calAt(o.d))), f=CCLALL[k];
+      o.a=nc==='USD'?Math.round(o.a/f*100)/100:Math.round(o.a*f); } }); c.cur=nc; }); mFill(); };
+  g('m-ev').onchange=e=>{ const d=ymd(e.target.value); if (d) upd(c=>{ c.ev=d>=CAL[CAL.length-1]?0:d; }); mFill(); };
+  g('m-evl').onclick=()=>{ upd(c=>{ c.ev=0; }); mFill(); };
+  g('m-ty').onchange=mForm; g('m-thw').onchange=mForm; g('m-ts').onchange=mForm;
+  g('m-tm').onchange=()=>{ mDatalist(); mHint(); };
+  ['m-td','m-tt','m-ta','m-tn','m-tp'].forEach(id=>g(id).addEventListener('input',mHint));
+  const add=()=>{ const c=mCur(), ty=g('m-ty').value, d=ymd(g('m-td').value), how=g('m-thw').value, say=(t)=>{ g('m-status').textContent=t; };
+    if (!d) return say('Elegí la fecha de la operación.');
+    if (d<CAL[0]) return say(`No hay datos antes del ${fdate(CAL[0])}.`);
+    let o={ty,d};
+    if (ty==='dep'||ty==='wd'){ const a=+g('m-ta').value||0; if (!(a>0)) return say('Ingresá el monto.'); o.a=a; }
+    else if (ty==='buy'){ const m=g('m-tm').value, t=g('m-tt').value.trim().toUpperCase();
+      if (UNI[m].byT[t]==null) return say(`${t||'Ese ticker'} no figura entre ${m==='ced'?'los CEDEARs':'las acciones argentinas'} del panel.`);
+      Object.assign(o,{m,t,how,fund:g('m-tf').value});
+      if (how==='qty'){ o.q=+g('m-tn').value||0; o.px=+g('m-tp').value||0; if (!(o.q>0)) return say('Ingresá la cantidad comprada.'); }
+      else { o.a=+g('m-ta').value||0; if (!(o.a>0)) return say('Ingresá el monto invertido.'); } }
+    else { const k=g('m-ts').value; if (!k) return say('Primero cargá una compra.');
+      if (k==='ALL') Object.assign(o,{m:'ced',t:'ALL',how:'pct',p:Math.max(1,Math.min(100,+g('m-tpc').value||100))});
+      else { const [m,t]=k.split(':'); Object.assign(o,{m,t,how});
+        if (how==='pct') o.p=Math.max(1,Math.min(100,+g('m-tpc').value||100));
+        else if (how==='qty'){ o.q=+g('m-tn').value||0; o.px=+g('m-tp').value||0; if (!(o.q>0)) return say('Ingresá la cantidad vendida.'); }
+        else { o.a=+g('m-ta').value||0; if (!(o.a>0)) return say('Ingresá el monto vendido.'); } }
+      o.dst=g('m-tdst').value; }
+    const x=txClean(o); if (!x) return say('No se pudo agregar la operación.');
+    upd(c=>{ c.tx.push(x); }); ['m-ta','m-tn','m-tp'].forEach(id=>g(id).value=''); if (ty==='buy') g('m-tt').value=''; mForm(); };
+  g('m-tadd').onclick=add; ['m-tt','m-ta','m-tn','m-tp','m-tpc'].forEach(id=>g(id).addEventListener('keydown',e=>{ if (e.key==='Enter') add(); }));
+  g('m-tx').addEventListener('click',e=>{ const b=e.target.closest('[data-trm]'); if (b) upd(c=>{ c.tx=c.tx.filter(o=>o.id!==b.dataset.trm); }); mForm(); });
+  g('m-ref').addEventListener('click',e=>{ const b=e.target.closest('[data-ref]'); if (!b) return; const k=b.dataset.ref;
+    if (k==='bt'&&!BT_SERIES){ g('m-status').textContent='Corriendo la validación con la configuración de la pestaña Cartera…'; if (!MS.ref.includes('bt')) MS.ref.push('bt'); mSave(); runBacktest(); return; }
+    MS.ref=MS.ref.includes(k)?MS.ref.filter(x=>x!==k):[...MS.ref,k]; mSave(); mRun(); });
+  g('m-view').onclick=e=>{ const b=e.target.closest('button'); if (!b) return; MVIEW=b.dataset.v; g('m-view').querySelectorAll('button').forEach(x=>x.setAttribute('aria-pressed',x===b)); mRun(); };
+  g('m-hold').addEventListener('click',e=>{ const tr=e.target.closest('tr[data-i]'); if (!tr) return; useU(UNI[tr.dataset.m]); openDetail(+tr.dataset.i); });
+  const copy=(msg)=>{ g('m-io').select(); let ok=false; try{ ok=document.execCommand('copy'); }catch(_){} g('m-iomsg').textContent=ok?msg+' Copiado al portapapeles.':msg+' Seleccioná el texto y copialo.'; };
+  g('m-exp').onclick=()=>{ g('m-io').value=JSON.stringify({list:MS.list},null,1); copy('Carteras exportadas.'); };
+  g('m-expc').onclick=()=>{ const c=mCur(), tn={buy:'compra',sell:'venta',dep:'aporte',wd:'retiro'};
+    g('m-io').value='fecha; tipo; mercado; ticker; cantidad; precio ARS; monto '+c.cur+'\n'+c.tx.slice().sort(txSort).map(o=>[fdate(o.d),tn[o.ty],o.ty==='buy'||o.ty==='sell'?(o.m==='ar'?'ar':'cedear'):'',o.t,o.how==='qty'?o.q:'',o.how==='qty'&&o.px?o.px:'',o.how==='amt'?o.a:''].join('; ')).join('\n');
+    copy(`${c.tx.length} operaciones de “${c.name}”.`); };
+  g('m-imp').onclick=()=>{ const txt=g('m-io').value.trim(); if (!txt){ g('m-iomsg').textContent='Pegá primero el texto a importar.'; return; }
+    let d=null; try{ d=JSON.parse(txt); }catch(_){}
+    if (d){ const arr=(Array.isArray(d)?d:Array.isArray(d.list)?d.list:[d]).map(mClean).filter(Boolean);
+      if (!arr.length){ g('m-iomsg').textContent='No se encontraron carteras en el texto.'; return; }
+      arr.forEach(c=>{ if (MS.list.some(x=>x.id===c.id)) c.id=mNewId(); MS.list.push(c); }); MS.cur=arr[0].id; mSave(); renderMine(); g('m-iomsg').textContent=`Se importaron ${arr.length} cartera(s).`; return; }
+    const {out,bad}=parseTxText(txt);
+    if (!out.length){ g('m-iomsg').textContent='No se reconoció ninguna operación. Revisá el formato del ejemplo.'; return; }
+    upd(c=>{ c.tx.push(...out); }); mForm(); g('m-iomsg').textContent=`Se agregaron ${out.length} operaciones a “${mCur().name}”.${bad.length?` No se reconocieron las líneas ${bad.slice(0,10).join(', ')}.`:''}`; };
+})();
+
+/* ==================== DESCARGAS ==================== */
+const KEEP_SRC=['chart.umd','data/ced.js','data/ar.js'];
+// página limpia: solo lo que es del tablero, con head propio (título, estilos y metadatos)
+const CHART_URL='https://cdnjs.cloudflare.com/ajax/libs/Chart.js/4.4.1/chart.umd.min.js';
+// página limpia armada con una lista blanca: estilos y metadatos propios, el contenido del tablero y su código
+function cleanPage({dataInline=false, pwa=false, chartText=null, chartLocal=false}={}){
+  const b=SRC_BODY.cloneNode(true), head=[];
+  [...b.children].forEach(el=>{ if (/^(TITLE|META|LINK|STYLE)$/.test(el.tagName)) head.push(el.outerHTML); });
+  const wrap=b.querySelector('div.wrap'), dlg=b.querySelector('dialog#dlg'), app=b.querySelector('script#app');
+  let body=(wrap?wrap.outerHTML:'')+'\n'+(dlg?dlg.outerHTML:'');
+  body=body.replace('Si tenés la página abierta, se recarga sola después de cada actualización.', pwa?'Al volver a abrir la página se cargan los datos más recientes.':'');
+  if (!pwa && dataInline) body=body.replace('Los datos se renuevan solos.','Esta copia descargada tiene los datos del momento de la descarga y no se actualiza sola. En la versión publicada, los datos se renuevan así:');
+  const esc_=(t)=>t.replace(/<\/script/gi,'<\\/script');
+  const chart=chartText?`<script>${esc_(chartText)}<\/script>`:chartLocal?'<script src="vendor/chart.umd.min.js"><\/script>':`<script src="${CHART_URL}"><\/script>`;
+  const data=dataInline?`<script>${jsData('__CED',D_CED)}<\/script>\n<script>${jsData('__AR',D_AR)}<\/script>`:'<script src="data/ced.js"><\/script>\n<script src="data/ar.js"><\/script>';
+  const pw=pwa?`<meta name="theme-color" content="#0b6e63"><link rel="manifest" href="manifest.webmanifest"><link rel="icon" href="icons/icon-192.png" type="image/png"><link rel="apple-touch-icon" href="icons/apple-touch-icon.png"><meta name="apple-mobile-web-app-capable" content="yes"><meta name="mobile-web-app-capable" content="yes"><meta name="apple-mobile-web-app-status-bar-style" content="default"><meta name="apple-mobile-web-app-title" content="CEDEAR">`:'';
+  const sw=pwa?`<script>if ('serviceWorker' in navigator && location.protocol==='https:') navigator.serviceWorker.register('sw.js').catch(()=>{});<\/script>`:'';
+  return `<!doctype html>\n<html lang="es">\n<head>\n<meta charset="utf-8">\n<meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover">\n${pw}\n${head.join('\n')}\n</head>\n<body>\n${body}\n${chart}\n${data}\n<script id="app">${app?app.textContent:''}<\/script>\n${sw}\n</body>\n</html>\n`;
+}
+async function chartText(){
+  try{ const r=await fetch(CHART_URL); if (r.ok){ const t=await r.text(); if (t.length>100000&&t.includes('Chart')) return t; } }catch(e){}
+  return null;
+}
+function jsData(v, d){ return `window.${v}=${JSON.stringify(d).replace(/<\//g,'<\\/')};`; }
+function iconPng(size, maskable){
+  const c=document.createElement('canvas'); c.width=c.height=size; const g=c.getContext('2d'), s=size/512;
+  g.fillStyle='#0b6e63'; if (maskable) g.fillRect(0,0,size,size); else { const r=96*s; g.beginPath(); g.moveTo(r,0); g.arcTo(size,0,size,size,r); g.arcTo(size,size,0,size,r); g.arcTo(0,size,0,0,r); g.arcTo(0,0,size,0,r); g.fill(); }
+  const pad=maskable?150*s:110*s, w=size-2*pad, bw=w/5;
+  g.fillStyle='#ffffff'; [0.42,0.62,0.5,0.82].forEach((h,i)=>{ const x=pad+i*bw*1.3, bh=w*h; g.fillRect(x, pad+w-bh, bw*0.9, bh); });
+  g.strokeStyle='#d6ece8'; g.lineWidth=14*s; g.lineCap='round'; g.lineJoin='round'; g.beginPath();
+  [[0,0.5],[1.3,0.3],[2.6,0.42],[3.9,0.12]].forEach(([i,y],k)=>{ const x=pad+i*bw+bw*0.45, yy=pad+w*y; k?g.lineTo(x,yy):g.moveTo(x,yy); }); g.stroke();
+  return new Promise(r=>c.toBlob(r,'image/png'));
+}
+const WORKFLOW=`name: Actualizar datos y publicar
+
+on:
+  schedule:
+    - cron: '45 14-21 * * 1-5'   # 11:45 a 18:45 en Buenos Aires: precios en rueda
+    - cron: '15 23 * * 1-5'      # 20:15 en Buenos Aires: reconstrucción con cierres oficiales
+  workflow_dispatch:
+    inputs:
+      modo:
+        description: 'intraday (precios del momento) o full (reconstrucción completa)'
+        type: choice
+        options: [intraday, full]
+        default: full
+  push:
+    branches: [main]
+
+permissions:
+  contents: write
+  pages: write
+  id-token: write
+
+concurrency:
+  group: tablero
+  cancel-in-progress: false
+
+jobs:
+  datos:
+    if: github.event_name != 'push'
+    runs-on: ubuntu-latest
+    timeout-minutes: 60
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-python@v5
+        with:
+          python-version: '3.12'
+      - name: Elegir modo
+        id: modo
+        run: |
+          if [ "\${{ github.event_name }}" = "workflow_dispatch" ]; then echo "m=\${{ inputs.modo }}" >> "$GITHUB_OUTPUT"
+          elif [ "\${{ github.event.schedule }}" = "15 23 * * 1-5" ]; then echo "m=full" >> "$GITHUB_OUTPUT"
+          else echo "m=intraday" >> "$GITHUB_OUTPUT"; fi
+      - name: Correr el proceso de datos
+        run: |
+          M="\${{ steps.modo.outputs.m }}"
+          if [ "$M" = "full" ]; then python -u pipeline.py full --out . --prev . || python -u pipeline.py full --out . --prev .
+          else python -u pipeline.py intraday --out . || (sleep 60 && python -u pipeline.py intraday --out .); fi
+      - name: Guardar los datos
+        run: |
+          git config user.name "github-actions[bot]"
+          git config user.email "41898283+github-actions[bot]@users.noreply.github.com"
+          git add data
+          git diff --cached --quiet || git commit -m "Datos \${{ steps.modo.outputs.m }} $(date -u +%Y-%m-%dT%H:%MZ)"
+          git push
+
+  publicar:
+    needs: datos
+    if: always() && (needs.datos.result == 'success' || needs.datos.result == 'skipped')
+    runs-on: ubuntu-latest
+    environment:
+      name: github-pages
+      url: \${{ steps.deploy.outputs.page_url }}
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          ref: main
+      - uses: actions/configure-pages@v5
+      - uses: actions/upload-pages-artifact@v3
+        with:
+          path: .
+      - id: deploy
+        uses: actions/deploy-pages@v4
+`;
+const SW=`// Service worker: funciona sin conexión con la última versión vista y busca datos nuevos cuando hay red.
+const CACHE='tablero-cedear-v2';
+const CORE=['./','./index.html','./data/ced.js','./data/ar.js','./vendor/chart.umd.min.js','./manifest.webmanifest','./icons/icon-192.png','./icons/icon-512.png'];
+self.addEventListener('install',e=>{ e.waitUntil(caches.open(CACHE).then(c=>c.addAll(CORE)).catch(()=>{})); self.skipWaiting(); });
+self.addEventListener('activate',e=>{ e.waitUntil(caches.keys().then(ks=>Promise.all(ks.filter(k=>k!==CACHE).map(k=>caches.delete(k))))); self.clients.claim(); });
+self.addEventListener('fetch',e=>{
+  const r=e.request; if (r.method!=='GET') return; const u=new URL(r.url);
+  if (u.origin===location.origin){
+    e.respondWith(fetch(r).then(res=>{ if (res.ok){ const cp=res.clone(); caches.open(CACHE).then(c=>c.put(r,cp)); } return res; })
+      .catch(()=>caches.match(r,{ignoreSearch:true}).then(m=>m||caches.match('./index.html'))));
+  } else if (/cdnjs\\.cloudflare\\.com|fonts\\.(googleapis|gstatic)\\.com/.test(u.hostname)){
+    e.respondWith(caches.match(r).then(m=>m||fetch(r).then(res=>{ const cp=res.clone(); caches.open(CACHE).then(c=>c.put(r,cp)); return res; })));
+  }
+});
+`;
+const MANIFEST=JSON.stringify({name:'Tablero CEDEAR',short_name:'CEDEAR',description:'Ranking de CEDEARs y acciones argentinas, carteras óptimas y seguimiento de carteras propias.',lang:'es',
+  start_url:'./',scope:'./',display:'standalone',orientation:'any',background_color:'#f3f5f4',theme_color:'#0b6e63',
+  icons:[{src:'icons/icon-192.png',sizes:'192x192',type:'image/png'},{src:'icons/icon-512.png',sizes:'512x512',type:'image/png'},{src:'icons/icon-maskable-512.png',sizes:'512x512',type:'image/png',purpose:'maskable'}]},null,2);
+function readme(hasPipe){ return `# Tablero CEDEAR
+
+Ranking de CEDEARs y acciones del panel general de BYMA, carteras óptimas (media-varianza, paridad de riesgo, media-CVaR, GJR-GARCH, regímenes HMM), validación fuera de muestra y seguimiento de carteras propias en pesos o en dólares.
+
+Todo se calcula en el navegador a partir de \`data/ced.js\` y \`data/ar.js\`. La página funciona en computadoras, iPhone y Android, y se puede instalar como aplicación.
+
+## Publicarlo en GitHub Pages
+
+1. Creá un repositorio nuevo en GitHub (público, para usar Pages gratis).
+2. Subí el contenido de esta carpeta: **Add file → Upload files** y arrastrá todo, incluida la carpeta oculta \`.github\` (en Mac, mostrá los archivos ocultos con Cmd + Shift + punto). Con git: \`git init && git add . && git commit -m "Tablero" && git branch -M main && git remote add origin URL && git push -u origin main\`.
+3. **Settings → Pages → Build and deployment → Source: GitHub Actions.**
+4. **Settings → Actions → General → Workflow permissions: Read and write permissions.**
+5. En **Actions**, abrí "Actualizar datos y publicar" y tocá **Run workflow** (modo \`full\`) para probar. Al terminar, la página queda en \`https://TU-USUARIO.github.io/NOMBRE-DEL-REPO/\`.
+
+## Actualización automática
+
+${hasPipe?`El archivo \`.github/workflows/actualizar.yml\` corre \`pipeline.py\` en días hábiles:
+
+- cada hora de 11:45 a 18:45 (Buenos Aires), con los precios del momento;
+- a las 20:15, con la reconstrucción completa sobre los cierres oficiales.
+
+Después de cada corrida guarda los datos en el repositorio y vuelve a publicar la página. GitHub puede demorar unos minutos las tareas programadas, y las suspende si el repositorio pasa 60 días sin actividad (se reactivan desde la pestaña Actions). Las fuentes son data912.com y Yahoo Finance; si Yahoo limita las consultas desde los servidores de GitHub, la corrida falla y los datos quedan como estaban hasta la siguiente.`:`Esta descarga no incluyó \`pipeline.py\`, así que los datos no se actualizan solos. Agregá el proceso de datos en la raíz del repositorio con ese nombre para activar la actualización programada.`}
+
+## En el celular
+
+- **iPhone o iPad:** abrí la dirección en Safari → Compartir → **Agregar a inicio**.
+- **Android:** abrí la dirección en Chrome → menú ⋮ → **Instalar aplicación** (o "Agregar a la pantalla principal").
+
+Una vez instalada se abre a pantalla completa y, sin conexión, muestra la última versión que vio.
+
+## Carteras propias
+
+Las carteras de la pestaña "Mi cartera" se guardan en cada navegador. Para pasarlas de un dispositivo a otro, usá **Exportar** e **Importar** al pie de esa pestaña.
+
+## Archivos
+
+| Archivo | Qué es |
+|---|---|
+| \`index.html\` | La página |
+| \`data/ced.js\`, \`data/ar.js\` | Datos de CEDEARs y acciones argentinas (series en USD, CCL diario) |
+| \`pipeline.py\` | Proceso de datos: \`python pipeline.py intraday --out .\` o \`python pipeline.py full --out . --prev .\` |
+| \`vendor/chart.umd.min.js\` | Biblioteca de gráficos (Chart.js 4.4.1), local para funcionar sin conexión |
+| \`manifest.webmanifest\`, \`sw.js\`, \`icons/\` | Instalación como aplicación y uso sin conexión |
+| \`.github/workflows/actualizar.yml\` | Actualización programada y publicación en Pages |
+
+Herramienta analítica; no constituye asesoramiento financiero.
+`; }
+async function getPipeline(){
+  for (const u of ['pipeline/pipeline.txt','pipeline.py']){ try{ const r=await fetch(u,{cache:'no-store'}); if (r.ok){ const t=await r.text(); if (t.includes('def intraday')) return t; } }catch(e){} }
+  return null;
+}
+function loadJSZip(){
+  if (window.JSZip) return Promise.resolve(window.JSZip);
+  return new Promise((ok,no)=>{ const sc=document.createElement('script'); sc.src='https://cdnjs.cloudflare.com/ajax/libs/jszip/3.10.1/jszip.min.js'; sc.onload=()=>ok(window.JSZip); sc.onerror=()=>no(new Error('No se pudo cargar el compresor ZIP.')); document.head.appendChild(sc); });
+}
+async function buildStandalone(){ const ct=await chartText(); return {blob:new Blob([cleanPage({dataInline:true, chartText:ct})],{type:'text/html'}), offline:!!ct}; }
+async function buildRepoZip(){
+  const JSZip=await loadJSZip(), z=new JSZip(), pipe=await getPipeline();
+  const ct=await chartText();
+  z.file('index.html',cleanPage({pwa:true, chartLocal:!!ct}));
+  if (ct) z.file('vendor/chart.umd.min.js',ct);
+  z.file('data/ced.js',jsData('__CED',D_CED)+'\n'); z.file('data/ar.js',jsData('__AR',D_AR)+'\n');
+  if (pipe) z.file('pipeline.py',pipe);
+  z.file('manifest.webmanifest',MANIFEST); z.file('sw.js',SW); z.file('.nojekyll','');
+  z.file('.github/workflows/actualizar.yml',WORKFLOW); z.file('README.md',readme(!!pipe));
+  z.file('icons/icon-192.png',await iconPng(192)); z.file('icons/icon-512.png',await iconPng(512)); z.file('icons/icon-maskable-512.png',await iconPng(512,true)); z.file('icons/apple-touch-icon.png',await iconPng(180,true));
+  return {blob:await z.generateAsync({type:'blob',compression:'DEFLATE',compressionOptions:{level:6}}), pipe:!!pipe};
+}
+async function offerFile(filename, blob){
+  let dl=null; try{ dl=window.claude&&window.claude.use?await window.claude.use('downloads'):null; }catch(e){ dl=null; }
+  if (dl){ try{ await dl.save({filename, data:blob}); return 'saved'; }catch(e){ return e&&e.code||'unavailable'; } }
+  const a=document.createElement('a'), url=URL.createObjectURL(blob); a.href=url; a.download=filename; document.body.appendChild(a); a.click(); a.remove(); setTimeout(()=>URL.revokeObjectURL(url),30000); return 'saved';
+}
+(function(){
+  const msg=document.getElementById('dl-msg'), say=(t)=>{ msg.textContent=t; msg.hidden=!t; };
+  const stamp=()=>String(Math.max(D_CED.asof,D_AR.asof));
+  const run=async(btn, fn)=>{ btn.disabled=true; try{ await fn(); } catch(e){ say('No se pudo preparar la descarga: '+(e&&e.message||e)); } finally{ btn.disabled=false; } };
+  const out=(r,ok)=>{ say(r==='saved'?ok:r==='declined'?'Descarga cancelada.':r==='rate_limited'?'Ya hay una descarga esperando confirmación.':'Las descargas no están disponibles en esta vista. Abrí el tablero en claude.ai o en un navegador.'); };
+  document.getElementById('dl-html').onclick=e=>run(e.currentTarget,async()=>{ say('Preparando el archivo…'); const {blob:b,offline}=await buildStandalone();
+    out(await offerFile(`tablero-cedear-${stamp()}.html`,b),`Listo: tablero-cedear-${stamp()}.html (${num(b.size/1048576,1)} MB). Abrilo con un navegador (Chrome, Edge, Firefox o Safari en computadora; Chrome en Android).${offline?' Funciona sin conexión.':' Los gráficos necesitan conexión.'} En iPhone, la vista previa de Archivos no ejecuta la página: usá la versión de GitHub Pages.`); });
+  document.getElementById('dl-zip').onclick=e=>run(e.currentTarget,async()=>{ say('Armando el repositorio…'); const {blob,pipe}=await buildRepoZip();
+    out(await offerFile(`tablero-cedear-github-${stamp()}.zip`,blob),`Listo: repositorio de ${num(blob.size/1048576,1)} MB. Descomprimilo y seguí el README.md para publicarlo en GitHub Pages.${pipe?'':' No se pudo incluir el proceso de datos, así que no se actualizará solo.'}`); });
+})();
+
+/* ==================== INICIO ==================== */
+route();
+</script>
+<script>if ('serviceWorker' in navigator && location.protocol==='https:') navigator.serviceWorker.register('sw.js').catch(()=>{});</script>
+</body>
+</html>
